@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2012 Johns Hopkins University
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+-->
+<configuration scan="true" scanPeriod="10 seconds">
+
+    <!--
+      | Appenders
+      +-->
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%-3p [%t]: %c{3}@%L %d %m %n</pattern>
+        </encoder>
+    </appender>
+
+    
+    <appender name="FCREPO" class="ch.qos.logback.core.FileAppender">
+        <file>target/logs/fcrepo.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%-3p [%t]: %c{3}@%L %d %m %n</pattern>
+        </encoder>
+    </appender>
+    
+    <appender name="JETTY" class="ch.qos.logback.core.FileAppender">
+        <file>target/logs/jetty.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%-3p [%t]: %c{3}@%L %d %m %n</pattern>
+        </encoder>
+    </appender>
+
+
+    <!--
+      | Loggers
+      +-->
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <logger name="org.fcrepo" level="INFO">
+        <appender-ref ref="FCREPO"/>
+    </logger>
+
+
+    <logger name="org.eclipse.jetty" level="INFO" additivity="false">
+        <appender-ref ref="JETTY"/>
+    </logger>
+
+
+</configuration>
