@@ -14,7 +14,7 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-## Data Conservancy Packaging tool ##
+## Simple Data Conservancy Package Ingest Service ##
 
 This is a description of the package ingest service
 
