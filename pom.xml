@@ -30,6 +30,7 @@
     <module>package-ingest-integration</module>
     <module>package-ingest-impl</module>
     <module>package-ingest-api</module>
+    <module>package-ingest-camel</module>
   </modules>
 
   <!-- Properties ================================================ -->

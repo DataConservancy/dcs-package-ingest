@@ -6,7 +6,7 @@
     <artifactId>package-ingest</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>package-ingest-impl</artifactId>
+  <artifactId>package-ingest-camel</artifactId>
   <packaging>bundle</packaging>
   <build>
     <plugins>
@@ -38,6 +38,12 @@
       <artifactId>package-ingest-api</artifactId>
       <version>${project.version}</version>
     </dependency>
-  </dependencies>
 
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <version>${camel.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 </project>
