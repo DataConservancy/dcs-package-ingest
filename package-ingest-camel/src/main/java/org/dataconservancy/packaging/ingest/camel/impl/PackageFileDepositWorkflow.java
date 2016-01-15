@@ -1,18 +1,14 @@
 
 package org.dataconservancy.packaging.ingest.camel.impl;
 
-import java.io.File;
-
 import java.util.Map;
 
 import org.apache.camel.builder.RouteBuilder;
 
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Reference;
 
 import static org.dataconservancy.packaging.ingest.camel.NotificationDriver.ROUTE_NOTIFICATION_FAIL;
 import static org.dataconservancy.packaging.ingest.camel.NotificationDriver.ROUTE_NOTIFICATION_SUCCESS;
@@ -46,11 +42,6 @@ public class PackageFileDepositWorkflow
     @Activate
     private void init(Map<String, String> config) {
         this.config = config;
-    }
-
-    @Reference
-    public void setPackageAnalyzer(LdpPackageAnalyzer<File> analyzer) {
-
     }
 
     @Override

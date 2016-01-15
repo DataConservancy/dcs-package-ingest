@@ -41,7 +41,7 @@
     <site.basedir>${project.basedir}</site.basedir>
     <maven-bundle-plugin.version>3.0.1</maven-bundle-plugin.version>
     <osgi.version>5.0.0</osgi.version>
-    <camel.version>2.15.3</camel.version>
+    <camel.version>2.16.1</camel.version>
   </properties>
 
   <!-- Build ====================================================== -->

@@ -9,6 +9,9 @@ public interface DepositDriver
     public static final String ROUTE_TRANSACTION_BEGIN =
             "direct:transaction_begin";
 
+    public static final String ROUTE_TRANSACTION_CANONICALIZE =
+            "direct:transaction_canonicalize";
+
     public static final String ROUTE_TRANSACTION_COMMIT =
             "direct:transaction_commit";
 
@@ -16,11 +19,12 @@ public interface DepositDriver
             "direct:transaction_rollback";
 
     public static final String ROUTE_DEPOSIT_PROVENANCE =
-            "direct:transaction_commit";
+            "direct:deposit_provenance";
 
     public static final String ROUTE_DEPOSIT_RESOURCES =
-            "direct:transaction_commit";
+            "direct:deposit_resources";
 
     public static final String ROUTE_DEPOSIT_REMAP_RELATIONSHIPS =
-            "direct:transaction_commit";
+            "direct:remap_relationships";
+    
 }
