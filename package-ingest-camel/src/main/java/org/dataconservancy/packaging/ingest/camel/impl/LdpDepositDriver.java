@@ -61,6 +61,8 @@ public class LdpDepositDriver
 
     static final String ID_DEPOSIT_ITERATE = "deposit-ldp-iterate";
 
+    static final String ID_DEPOSIT_REMAP = "ldp-remap-uris";
+
     private LdpPackageAnalyzer<File> analyzer;
 
     protected void configureTransactions() {
@@ -269,9 +271,8 @@ public class LdpDepositDriver
 
         /* Remap original URIs to ldp URIs */
         from("direct:_remap_uris")
-                .split(simple(String.format("${header.%s.values()}",
-                                            HEADER_URI_MAP)),
-                       ((o, n) -> o))
+                .id(ID_DEPOSIT_REMAP)
+                .split(header(HEADER_URI_MAP).method("values"), ((o, n) -> o))
                 .setHeader(HttpHeaders.LOCATION, body())
                 .to("direct:_retrieveForUpdate")
                 .process(e -> {
@@ -305,31 +306,28 @@ public class LdpDepositDriver
      * Merges the URI map of an 'newer' message, with the 'original', and
      * returns the original message, with its URI map updated.
      */
-    private static final AggregationStrategy MERGE_URI_MAP =
-            ((orig, newer) -> {
+    static final AggregationStrategy MERGE_URI_MAP = ((orig, newer) -> {
 
-                if (orig == null) return newer;
+        if (orig == null) return newer;
 
-                Map<String, String> master = uriMap(orig);
+        Map<String, String> master = uriMap(orig);
 
-                if (master != null) {
-                    uriMap(newer)
-                            .forEach((k, v) -> master.merge(k,
-                                                            v,
-                                                            ((v1, v2) -> v1)));
-                } else {
-                    orig.getIn().setHeader(HEADER_URI_MAP, uriMap(newer));
-                }
+        if (master != null) {
+            uriMap(newer)
+                    .forEach((k, v) -> master.merge(k, v, ((v1, v2) -> v1)));
+        } else {
+            orig.getIn().setHeader(HEADER_URI_MAP, uriMap(newer));
+        }
 
-                return orig;
-            });
+        return orig;
+    });
 
     /*
      * Merges the RDF of two bodies
      * Body: Serialized RDF
      * Headers: Exchange.CONTENT_TYPE, Location
      */
-    private static final AggregationStrategy MERGE_RDF = ((orig, newer) -> {
+    static final AggregationStrategy MERGE_RDF = ((orig, newer) -> {
         Model model = ModelFactory.createDefaultModel();
         StreamRDF sink = StreamRDFLib.graph(model.getGraph());
         parseRDFBody(sink, orig);
@@ -340,12 +338,12 @@ public class LdpDepositDriver
     });
 
     /* Retrieve the uri map of a message */
-    private static Map<String, String> uriMap(Exchange e) {
+    static Map<String, String> uriMap(Exchange e) {
         return e.getIn().getHeader(HEADER_URI_MAP, Map.class);
     }
 
     /* Serializes rdf from a model into a message body */
-    private static void writeRDFBody(Model model, Exchange e) {
+    static void writeRDFBody(Model model, Exchange e) {
         e.getIn().setHeader(Exchange.CONTENT_TYPE, "text/turtle");
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         model.write(out, "TURTLE");
@@ -353,7 +351,7 @@ public class LdpDepositDriver
     }
 
     /* Parses the body of the message in an exchange into rdf */
-    private static void parseRDFBody(StreamRDF sink, Exchange e) {
+    static void parseRDFBody(StreamRDF sink, Exchange e) {
         RDFDataMgr
                 .parse(sink,
                        new TypedInputStream(e.getIn()
