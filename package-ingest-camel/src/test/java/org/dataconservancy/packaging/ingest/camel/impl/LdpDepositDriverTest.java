@@ -1,12 +1,17 @@
 
 package org.dataconservancy.packaging.ingest.camel.impl;
 
+import java.io.File;
+
 import java.net.URI;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.io.IOUtils;
 
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -21,7 +26,9 @@ import org.apache.http.HttpHeaders;
 
 import org.junit.Test;
 
+import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
 import org.dataconservancy.packaging.ingest.LdpResource;
+import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,6 +37,7 @@ import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.H
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.PROP_LDP_CONTAINER;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.ID_DEPOSIT_ITERATE;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.ID_DEPOSIT_REMAP;
+import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.ID_HTTP_OPERATION;
 
 /* Verifies that a hierarchies of LDP nodes will be traversed for deposit */
 @SuppressWarnings("serial")
@@ -44,6 +52,8 @@ public class LdpDepositDriverTest
 
     @Produce
     private ProducerTemplate template;
+
+    LdpDepositDriver driver;
 
     /*
      * Assures that an entire LDP hierarchy is deposited, and URI mappings
@@ -129,6 +139,70 @@ public class LdpDepositDriverTest
 
     }
 
+    /*
+     * Verifies that binary-descriptive resources are deposited via a merge with
+     * the LDP-created description resource
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void depositWithBinaryTest() throws Exception {
+        String PARENT_RESOURCE_URI = "test:/parent";
+        String BINARY_RESOURCE_URI = "test:/bin/test.txt";
+        String DESCRIPTION_RESOURCE_URI = "test:/desc";
+
+        String TEST_HEADER = "test.header";
+        String TEST_HEADER_VALUE = "test.header.value";
+
+        File file = mock(File.class);
+
+        LdpResource descriptiveResource = mock(LdpResource.class);
+        when(descriptiveResource.getURI())
+                .thenReturn(URI.create(DESCRIPTION_RESOURCE_URI));
+        when(descriptiveResource.getChildren()).thenReturn(Arrays.asList());
+        when(descriptiveResource.getMediaType()).thenReturn("text/turtle");
+        when(descriptiveResource.getBody())
+                .thenReturn(IOUtils.toInputStream(String
+                        .format("<%s> a <test:/binary>", BINARY_RESOURCE_URI)));
+
+        LdpResource binaryResource = mock(LdpResource.class);
+        when(binaryResource.getChildren()).thenReturn(Arrays.asList());
+        when(binaryResource.getMediaType()).thenReturn("text/plain");
+        when(binaryResource.getBody())
+                .thenReturn(IOUtils.toInputStream("test!"));
+        when(binaryResource.getURI())
+                .thenReturn(URI.create(BINARY_RESOURCE_URI));
+        when(binaryResource.getDescription()).thenReturn(descriptiveResource);
+
+        LdpResource parent = mock(LdpResource.class);
+        when(parent.getURI()).thenReturn(URI.create(PARENT_RESOURCE_URI));
+        when(parent.getMediaType()).thenReturn("text/turtle");
+        when(parent.getChildren()).thenReturn(Arrays.asList(binaryResource));
+        when(parent.getBody()).thenReturn(IOUtils.toInputStream(String
+                .format("<test:/parent> <test:/rel> <%s>",
+                        DESCRIPTION_RESOURCE_URI)));
+
+        LdpPackageAnalyzer<File> analyzer =
+                (LdpPackageAnalyzer<File>) mock(LdpPackageAnalyzer.class);
+        when(analyzer.getContainerRoots(file))
+                .thenReturn(Arrays.asList(parent));
+
+        driver.setPackageAnalyzer(analyzer);
+
+        MockLDP ldp = new MockLDP();
+
+        /* Mock repository interactions */
+        context.getRouteDefinition(ID_HTTP_OPERATION).adviceWith(context, ldp);
+
+        template.sendBodyAndHeader("direct:testEntireDeposit",
+                                   file,
+                                   TEST_HEADER,
+                                   TEST_HEADER_VALUE);
+
+        mockOut.setExpectedCount(1);
+
+        assertMockEndpointsSatisfied();
+    }
+
     /* Verifies that the URI re-mapping route actually re-maps resources */
     @Test
     public void remapURiTest() throws Exception {
@@ -164,7 +238,7 @@ public class LdpDepositDriverTest
                                 .process(e -> {
                                     e.getIn().setBody(objectContentMap.get(e
                                             .getIn()
-                                            .getHeader(HttpHeaders.LOCATION)));
+                                            .getHeader(Exchange.HTTP_URI)));
                                     e.getIn().setHeader(HttpHeaders.ETAG, ETAG);
                                 });
 
@@ -222,18 +296,13 @@ public class LdpDepositDriverTest
                                              String.class),
                          "text/turtle");
             assertEquals(ETAG, e.getIn().getHeader(HttpHeaders.IF_MATCH));
-
-            /* Assert that the URI is real */
-            assertTrue(uriMap.values().contains(e.getIn()
-                    .getHeader(Exchange.HTTP_URI)));
-
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
     protected RouteBuilder createRouteBuilder() {
-        LdpDepositDriver driver = new LdpDepositDriver();
+        driver = new LdpDepositDriver();
         driver.init(new HashMap<String, String>() {
 
             {
@@ -246,6 +315,10 @@ public class LdpDepositDriverTest
             @Override
             public void configure() throws Exception {
                 driver.addRoutesToCamelContext(context());
+
+                from("direct:testEntireDeposit")
+                        .to(DepositDriver.ROUTE_DEPOSIT_RESOURCES)
+                        .to("mock:out");
 
                 from("direct:testHierarchical")
                         .to("direct:_deposit_hierarchical").to("mock:out");
@@ -268,4 +341,80 @@ public class LdpDepositDriverTest
         return URI.create(uri.toString() + "#deposited").toString();
     }
 
+    private class MockLDP
+            extends AdviceWithRouteBuilder {
+
+        AtomicInteger depositCount = new AtomicInteger(0);
+
+        Map<String, String> httpBodies = new HashMap<>();
+
+        Map<String, String> mediaTypes = new HashMap<>();
+
+        @Override
+        public void configure() throws Exception {
+            interceptSendToEndpoint("http4:ldp-host")
+                    .skipSendToOriginalEndpoint()
+                    .choice()
+                    .when(header(Exchange.HTTP_METHOD).isEqualTo("GET"))
+                    .setHeader(HttpHeaders.ETAG, constant("etag"))
+                    .process(e -> {
+                        e.getIn().setBody(httpBodies.get(e.getIn()
+                                .getHeader(Exchange.HTTP_URI, String.class)));
+                        e.getIn()
+                                .setHeader(Exchange.CONTENT_TYPE,
+                                           mediaTypes
+                                                   .get(e.getIn()
+                                                           .getHeader(Exchange.HTTP_URI,
+                                                                      String.class)));
+                    })
+                    .when(header(Exchange.HTTP_METHOD).isEqualTo("PUT"))
+                    .process(e -> {
+                        String uri =
+                                e.getIn().getHeader(Exchange.HTTP_URI,
+                                                    String.class);
+                        httpBodies.put(uri, e.getIn().getBody(String.class));
+                        mediaTypes.put(uri,
+                                       e.getIn()
+                                               .getHeader(Exchange.CONTENT_TYPE,
+                                                          String.class));
+
+                    })
+                    .when(header(Exchange.HTTP_METHOD).isEqualTo("POST"))
+                    .process(e -> {
+                        String uri =
+                                "http://example.org/deposited/"
+                                        + depositCount.incrementAndGet();
+                        httpBodies.put(uri, e.getIn().getBody(String.class));
+
+                        mediaTypes.put(uri,
+                                       e.getIn()
+                                               .getHeader(Exchange.CONTENT_TYPE,
+                                                          String.class));
+
+                        e.getIn().setHeader(HttpHeaders.LOCATION, uri);
+                        e.getIn().setHeader(HttpHeaders.ETAG, "etag");
+
+                        /* If binary */
+                        if (mediaTypes.get(uri) != "text/turtle") {
+                            String descriptionURI =
+                                    "http://example.org/descriptions/"
+                                            + depositCount.incrementAndGet();
+                            httpBodies.put(descriptionURI, String
+                                    .format("<%s> a <test:description> .",
+                                            descriptionURI));
+                            mediaTypes.put(descriptionURI, "text/turtle");
+                            e.getIn()
+                                    .setHeader("Link",
+                                               String.format("<%s> rel=describedby",
+                                                             descriptionURI));
+                        }
+                    })
+                    .otherwise()
+                    .process(e -> {
+                        throw new RuntimeException("Unknown http method "
+                                + e.getIn().getHeader(Exchange.HTTP_METHOD));
+                    });
+        }
+
+    }
 }

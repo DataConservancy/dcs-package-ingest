@@ -63,6 +63,8 @@ public class LdpDepositDriver
 
     static final String ID_DEPOSIT_REMAP = "ldp-remap-uris";
 
+    static final String ID_HTTP_OPERATION = "ldp-http-operation";
+
     private LdpPackageAnalyzer<File> analyzer;
 
     protected void configureTransactions() {
@@ -206,8 +208,8 @@ public class LdpDepositDriver
                         }));
 
         /* Sanitize headers and perform an HTTP operation */
-        from("direct:_do_http_op").to("direct:_sanitize_headers")
-                .to("http4:ldp-host");
+        from("direct:_do_http_op").id(ID_HTTP_OPERATION)
+                .to("direct:_sanitize_headers").to("http4:ldp-host");
 
         /* Updates the URI map based on Location header */
         from("direct:_update_uri_map").id("ldp-update-uri-map")
@@ -237,6 +239,7 @@ public class LdpDepositDriver
                                   descriptionURI);
                     e.getIn().setHeader(Exchange.CONTENT_TYPE,
                                         description.getMediaType());
+                    e.getIn().setHeader(Exchange.HTTP_URI, descriptionURI);
                     e.getIn().setBody(description.getBody());
 
                 }).to("direct:_merge_ldpResource");
@@ -253,7 +256,7 @@ public class LdpDepositDriver
 
         /* Retrieve the current turtle representation of an object */
         from("direct:_retrieveForUpdate")
-                .setHeader(Exchange.HTTP_URI, header(HttpHeaders.LOCATION))
+                //.setHeader(Exchange.HTTP_URI, header(HttpHeaders.LOCATION))
                 .setHeader(HttpHeaders.ACCEPT, constant("text/turtle"))
                 .setHeader(Exchange.HTTP_METHOD, constant("GET"))
                 .to("direct:_do_http_op");
@@ -263,6 +266,7 @@ public class LdpDepositDriver
                 .removeHeaders("*",
                                Exchange.HTTP_URI,
                                Exchange.CONTENT_TYPE,
+                               Exchange.HTTP_METHOD,
                                HttpHeaders.AUTHORIZATION,
                                HttpHeaders.CONTENT_ENCODING,
                                HttpHeaders.IF_MATCH,
@@ -273,7 +277,7 @@ public class LdpDepositDriver
         from("direct:_remap_uris")
                 .id(ID_DEPOSIT_REMAP)
                 .split(header(HEADER_URI_MAP).method("values"), ((o, n) -> o))
-                .setHeader(HttpHeaders.LOCATION, body())
+                .setHeader(Exchange.HTTP_URI, body())
                 .to("direct:_retrieveForUpdate")
                 .process(e -> {
                     Map<String, String> uriMap = uriMap(e);
@@ -330,6 +334,7 @@ public class LdpDepositDriver
     static final AggregationStrategy MERGE_RDF = ((orig, newer) -> {
         Model model = ModelFactory.createDefaultModel();
         StreamRDF sink = StreamRDFLib.graph(model.getGraph());
+        
         parseRDFBody(sink, orig);
         parseRDFBody(sink, newer);
         writeRDFBody(model, orig);
@@ -352,6 +357,7 @@ public class LdpDepositDriver
 
     /* Parses the body of the message in an exchange into rdf */
     static void parseRDFBody(StreamRDF sink, Exchange e) {
+
         RDFDataMgr
                 .parse(sink,
                        new TypedInputStream(e.getIn()
