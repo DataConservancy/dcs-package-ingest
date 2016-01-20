@@ -8,8 +8,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.io.IOUtils;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.http.HttpHeaders;
 import org.apache.jena.atlas.web.ContentType;
@@ -110,7 +113,7 @@ public class LdpDepositDriver
                                    analyzer.getContainerRoots(m.getIn()
                                            .getBody(File.class))))
                 .split(header(HEADER_LDP_RESOURCES), MERGE_URI_MAP)
-                .to("direct:_deposit_hierarchical").end()
+                .stopOnException().to("direct:_deposit_hierarchical").end()
                 .enrich("direct:_remap_uris", ((orig, updated) -> orig));
 
         /* Initial setup for a series of subsequent LDP deposits */
@@ -119,11 +122,7 @@ public class LdpDepositDriver
                 .setHeader(Exchange.HTTP_URI,
                            constant(config.get(PROP_LDP_CONTAINER)))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
-                .process(m -> {
-                    if (m.getIn().getHeader(HEADER_URI_MAP) == null) {
-                        m.getIn().setHeader(HEADER_URI_MAP, new HashMap<>());
-                    }
-                });
+                .setHeader(HEADER_URI_MAP, constant(new HashMap<>()));
 
         /*
          * Recurse through the nodes of the tree.
@@ -137,15 +136,22 @@ public class LdpDepositDriver
          * Headers: HEADER_LDP_RESOURCES: Collection<LdpResource>
          */
         from("direct:_deposit_iterate")
-                .id("ldp-deposit-iterate")
                 .id(ID_DEPOSIT_ITERATE)
                 .split(header(HEADER_LDP_RESOURCES), MERGE_URI_MAP)
-                .enrich("direct:_deposit_ldpResource", MERGE_URI_MAP)
-                .process(e -> {
-                    e.getIn().setHeader(HEADER_LDP_RESOURCES,
-                                        e.getIn().getBody(LdpResource.class)
-                                                .getChildren());
-                }).to("direct:_deposit_iterate").end();
+                .stopOnException()
+                .enrich("direct:_deposit_ldpResource",
+                        (existing, deposited) -> {
+                            existing.getIn()
+                                    .setHeader(HttpHeaders.LOCATION,
+                                               deposited
+                                                       .getIn()
+                                                       .getHeader(HttpHeaders.LOCATION));
+                            return MERGE_URI_MAP.aggregate(existing, deposited);
+                        })
+                .setHeader(HEADER_LDP_RESOURCES,
+                           bodyAs(LdpResource.class).method("getChildren"))
+                .setHeader(Exchange.HTTP_URI, header(HttpHeaders.LOCATION))
+                .to("direct:_deposit_iterate").end();
 
         /*
          * Deposit an LDP resource, and map the location
@@ -240,8 +246,8 @@ public class LdpDepositDriver
                     e.getIn().setHeader(Exchange.CONTENT_TYPE,
                                         description.getMediaType());
                     e.getIn().setHeader(Exchange.HTTP_URI, descriptionURI);
-                    e.getIn().setBody(description.getBody());
-
+                    e.getIn()
+                            .setBody(IOUtils.toByteArray(description.getBody()));
                 }).to("direct:_merge_ldpResource");
 
         /*
@@ -252,14 +258,18 @@ public class LdpDepositDriver
                 .enrich("direct:_retrieveForUpdate", MERGE_RDF)
                 .setHeader(HttpHeaders.IF_MATCH, header(HttpHeaders.ETAG))
                 .setHeader(Exchange.CONTENT_TYPE, constant("text/turtle"))
+                .setHeader(Exchange.HTTP_METHOD, constant("PUT"))
                 .to("direct:_http_preserve_body");
 
         /* Retrieve the current turtle representation of an object */
         from("direct:_retrieveForUpdate")
-                //.setHeader(Exchange.HTTP_URI, header(HttpHeaders.LOCATION))
                 .setHeader(HttpHeaders.ACCEPT, constant("text/turtle"))
                 .setHeader(Exchange.HTTP_METHOD, constant("GET"))
-                .to("direct:_do_http_op");
+                .doTry()
+                .to("direct:_do_http_op")
+                .doCatch(HttpOperationFailedException.class)
+                .onWhen(e -> e.getException(HttpOperationFailedException.class)
+                        .getStatusCode() == 406).setBody(constant("")).end();
 
         /* Strip all headers except for certain HTTP headers used in requests */
         from("direct:_sanitize_headers")
@@ -267,6 +277,7 @@ public class LdpDepositDriver
                                Exchange.HTTP_URI,
                                Exchange.CONTENT_TYPE,
                                Exchange.HTTP_METHOD,
+                               HttpHeaders.ACCEPT,
                                HttpHeaders.AUTHORIZATION,
                                HttpHeaders.CONTENT_ENCODING,
                                HttpHeaders.IF_MATCH,
@@ -277,12 +288,22 @@ public class LdpDepositDriver
         from("direct:_remap_uris")
                 .id(ID_DEPOSIT_REMAP)
                 .split(header(HEADER_URI_MAP).method("values"), ((o, n) -> o))
+                .stopOnException()
                 .setHeader(Exchange.HTTP_URI, body())
-                .to("direct:_retrieveForUpdate")
+                .enrich("direct:_retrieveForUpdate",
+                        (orig, retrieved) -> {
+                            retrieved
+                                    .getIn()
+                                    .setHeader(HEADER_URI_MAP,
+                                               orig.getIn()
+                                                       .getHeader(HEADER_URI_MAP));
+                            return retrieved;
+                        })
                 .process(e -> {
                     Map<String, String> uriMap = uriMap(e);
                     Model model = ModelFactory.createDefaultModel();
                     StreamRDF sink = StreamRDFLib.graph(model.getGraph());
+
                     parseRDFBody(sink, e);
 
                     model.listSubjects()
@@ -299,7 +320,6 @@ public class LdpDepositDriver
                     writeRDFBody(model, e);
 
                 }).choice().when(header("updated"))
-                .setHeader(Exchange.HTTP_URI, header(HttpHeaders.LOCATION))
                 .setHeader(Exchange.HTTP_METHOD, constant("PUT"))
                 .setHeader(HttpHeaders.IF_MATCH, header(HttpHeaders.ETAG))
                 .to("direct:_do_http_op").end().end();
@@ -334,7 +354,7 @@ public class LdpDepositDriver
     static final AggregationStrategy MERGE_RDF = ((orig, newer) -> {
         Model model = ModelFactory.createDefaultModel();
         StreamRDF sink = StreamRDFLib.graph(model.getGraph());
-        
+
         parseRDFBody(sink, orig);
         parseRDFBody(sink, newer);
         writeRDFBody(model, orig);

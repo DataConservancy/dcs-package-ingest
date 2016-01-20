@@ -21,8 +21,11 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.http.HttpHeaders;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 
 import org.junit.Test;
 
@@ -162,7 +165,11 @@ public class LdpDepositDriverTest
         when(descriptiveResource.getMediaType()).thenReturn("text/turtle");
         when(descriptiveResource.getBody())
                 .thenReturn(IOUtils.toInputStream(String
-                        .format("<%s> a <test:/binary>", BINARY_RESOURCE_URI)));
+                        .format("<%s> a <test:Binary> .\n"
+                                        + "<%s> <test:inverseRel> <%s> .",
+                                BINARY_RESOURCE_URI,
+                                DESCRIPTION_RESOURCE_URI,
+                                PARENT_RESOURCE_URI)));
 
         LdpResource binaryResource = mock(LdpResource.class);
         when(binaryResource.getChildren()).thenReturn(Arrays.asList());
@@ -178,7 +185,8 @@ public class LdpDepositDriverTest
         when(parent.getMediaType()).thenReturn("text/turtle");
         when(parent.getChildren()).thenReturn(Arrays.asList(binaryResource));
         when(parent.getBody()).thenReturn(IOUtils.toInputStream(String
-                .format("<test:/parent> <test:/rel> <%s>",
+                .format("<%s> <test:rel> <%s> .",
+                        PARENT_RESOURCE_URI,
                         DESCRIPTION_RESOURCE_URI)));
 
         LdpPackageAnalyzer<File> analyzer =
@@ -201,6 +209,68 @@ public class LdpDepositDriverTest
         mockOut.setExpectedCount(1);
 
         assertMockEndpointsSatisfied();
+
+        Message outMessage = mockOut.getExchanges().get(0).getIn();
+
+        /* Make sure we have three resources */
+        assertEquals(3, ldp.httpBodies.size());
+
+        /* Make sure the original URIs are not in the bodies! */
+        ldp.httpBodies.forEach((k, v) -> {
+            assertFalse(v.contains(DESCRIPTION_RESOURCE_URI));
+            assertFalse(v.contains(PARENT_RESOURCE_URI));
+            assertFalse(v.contains(BINARY_RESOURCE_URI));
+        });
+
+        Map<String, String> uriMap =
+                outMessage.getHeader(HEADER_URI_MAP, Map.class);
+
+        /* read in the LDP parent object */
+        Model model = ModelFactory.createDefaultModel();
+        String ldpParentURI = uriMap.get(PARENT_RESOURCE_URI);
+        model.read(IOUtils.toInputStream(ldp.httpBodies.get(ldpParentURI)),
+                   null,
+                   "TURTLE");
+
+        /* We only specified one child, so make sure that remains true */
+        assertEquals(1,
+                     model.listObjectsOfProperty(model
+                             .getProperty("ldp:contains")).toList().size());
+
+        /* Make sure this child is the binary */
+        assertEquals(uriMap.get(BINARY_RESOURCE_URI), model
+                .listObjectsOfProperty(model.getProperty("ldp:contains"))
+                .toList().get(0).toString());
+
+        /*
+         * Make sure our test rel is still there, and that it points to the
+         * description
+         * resource
+         */
+        assertEquals(1,
+                     model.listObjectsOfProperty(model.getProperty("test:rel"))
+                             .toSet().size());
+        String ldpDescriptionURI =
+                model.listObjectsOfProperty(model.getProperty("test:rel"))
+                        .toList().get(0).toString();
+
+        assertEquals(ldpDescriptionURI, uriMap.get(DESCRIPTION_RESOURCE_URI));
+
+        /* Now load the description resource */
+        model = ModelFactory.createDefaultModel();
+        model.read(IOUtils.toInputStream(ldp.httpBodies.get(ldpDescriptionURI)),
+                   null,
+                   "TURTLE");
+
+        /* It should have the inverse rel */
+        assertEquals(1,
+                     model.listObjectsOfProperty(model
+                             .getProperty("test:inverseRel")).toList().size());
+        /* The inverse rel should point to the parent */
+        assertEquals(ldpParentURI,
+                     model.listObjectsOfProperty(model
+                             .getProperty("test:inverseRel")).toList().get(0)
+                             .toString());
     }
 
     /* Verifies that the URI re-mapping route actually re-maps resources */
@@ -358,20 +428,31 @@ public class LdpDepositDriverTest
                     .when(header(Exchange.HTTP_METHOD).isEqualTo("GET"))
                     .setHeader(HttpHeaders.ETAG, constant("etag"))
                     .process(e -> {
-                        e.getIn().setBody(httpBodies.get(e.getIn()
-                                .getHeader(Exchange.HTTP_URI, String.class)));
-                        e.getIn()
-                                .setHeader(Exchange.CONTENT_TYPE,
-                                           mediaTypes
-                                                   .get(e.getIn()
-                                                           .getHeader(Exchange.HTTP_URI,
-                                                                      String.class)));
+                        String uri =
+                                e.getIn().getHeader(Exchange.HTTP_URI,
+                                                    String.class);
+                        String type = mediaTypes.get(uri);
+                        String accept =
+                                e.getIn().getHeader(HttpHeaders.ACCEPT,
+                                                    String.class);
+                        e.getIn().setHeader(Exchange.CONTENT_TYPE, type);
+                        if (accept == null || accept.equals(type)) {
+                            e.getIn().setBody(httpBodies.get(uri));
+                        } else {
+                            throw new HttpOperationFailedException(uri,
+                                                                   406,
+                                                                   "not acceptable",
+                                                                   uri,
+                                                                   new HashMap<>(),
+                                                                   "");
+                        }
                     })
                     .when(header(Exchange.HTTP_METHOD).isEqualTo("PUT"))
                     .process(e -> {
                         String uri =
                                 e.getIn().getHeader(Exchange.HTTP_URI,
                                                     String.class);
+                        assertNotNull(uri);
                         httpBodies.put(uri, e.getIn().getBody(String.class));
                         mediaTypes.put(uri,
                                        e.getIn()
@@ -394,14 +475,33 @@ public class LdpDepositDriverTest
                         e.getIn().setHeader(HttpHeaders.LOCATION, uri);
                         e.getIn().setHeader(HttpHeaders.ETAG, "etag");
 
+                        String parentURI =
+                                e.getIn().getHeader(Exchange.HTTP_URI,
+                                                    String.class);
+
+                        /*
+                         * add ldp:contains. Yes, it's not the real LDP URI, but
+                         * this is a fake test impl.
+                         */
+                        if (httpBodies.containsKey(parentURI)) {
+                            String parentBody = httpBodies.get(parentURI);
+                            parentBody =
+                                    parentBody
+                                            + String.format("\n<%s> <ldp:contains> <%s> .",
+                                                            parentURI,
+                                                            uri);
+                            httpBodies.put(parentURI, parentBody);
+                        }
+
                         /* If binary */
                         if (mediaTypes.get(uri) != "text/turtle") {
                             String descriptionURI =
                                     "http://example.org/descriptions/"
                                             + depositCount.incrementAndGet();
                             httpBodies.put(descriptionURI, String
-                                    .format("<%s> a <test:description> .",
-                                            descriptionURI));
+                                    .format("<%s> <iana:describes> <%s> .",
+                                            descriptionURI,
+                                            uri));
                             mediaTypes.put(descriptionURI, "text/turtle");
                             e.getIn()
                                     .setHeader("Link",
@@ -415,6 +515,5 @@ public class LdpDepositDriverTest
                                 + e.getIn().getHeader(Exchange.HTTP_METHOD));
                     });
         }
-
     }
 }
