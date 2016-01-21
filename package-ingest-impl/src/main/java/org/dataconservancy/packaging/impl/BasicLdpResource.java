@@ -18,6 +18,7 @@ public class BasicLdpResource implements LdpResource {
 
     public BasicLdpResource(URI uri) {
         this.uri = uri;
+        children = new ArrayList<>();
     }
 
     @Override

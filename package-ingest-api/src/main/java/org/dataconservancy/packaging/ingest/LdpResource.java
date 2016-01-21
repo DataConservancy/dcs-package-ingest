@@ -16,7 +16,7 @@ public interface LdpResource {
     /** URI of this resource */
     public URI getURI();
 
-    /** If a container, these are the children */
+    /** If a container, these are the children. If there are no children and empty list will be returned, but never null. */
     public Collection<LdpResource> getChildren();
 
     /** Body of the LDP Resource, if RDF, presumed to be utf-8 encoded */
