@@ -1,0 +1,8 @@
+71c47a7f94b72ddcf4c4976efbf678b3  data/obj/curl.ttl
+740902ddaffbde86b41f2d2128f08c92  data/obj/curl/out.txt.ttl
+67da997fe5b27c3e5898f4dd4a74f7c7  data/obj/curl/LICENSE.ttl
+9b962acf96a6027d78b1c124ff367542  data/bin/curl/out.txt
+efd835768f68569be7a501721bab44d3  data/bin/curl/log.txt
+e276cc5712b234e65fd162769b009d8a  data/obj/curl/out.ttl
+9af13b2d31a47f71518aa5dde47fc025  data/bin/curl/LICENSE
+3998ca3b3437c89bd896b3d23bb32f02  data/obj/curl/log.txt.ttl

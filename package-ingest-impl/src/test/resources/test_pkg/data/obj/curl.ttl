@@ -1,0 +1,7 @@
+@prefix bom:   <http://dataconservancy.org/business-object-model#> .
+
+<>      a                  bom:Collection ;
+        bom:hasCreateDate  "2016-01-14T18:18:59.419Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+        bom:hasMember      <bag://test_pkg/data/obj/curl/out.ttl> ;
+        bom:hasMetadata    <bag://test_pkg/data/bin/curl/out.txt> , <bag://test_pkg/data/bin/curl/log.txt> , <bag://test_pkg/data/bin/curl/LICENSE> ;
+        bom:hasTitle       "curl" .

@@ -1,0 +1,10 @@
+Bag-Count: 1 of 1 
+Bag-Size: 2 MB 
+BagIt-Profile-Identifier: http://dataconservancy.org/formats/data-conservancy-pkg-1.0 
+Bagging-Date: 2016-01-20 
+Contact-Email: test@test.com 
+Contact-Name: Test 
+Domain-Profile: http://dataconservancy.org/ptg-profiles/dcs-bo-1.0 
+Package-Name: test_pkg 
+Payload-Oxum: 1788988.8 
+Resource-Manifest: bag://test_pkg/META-INF/org.dataconservancy.packaging/PKG-INFO/ORE-REM/ORE-REM.ttl 

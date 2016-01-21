@@ -1,0 +1,10 @@
+@prefix bom:   <http://dataconservancy.org/business-object-model#> .
+
+<bag://test_pkg/data/bin/curl/log.txt>
+        a                    bom:Metadata ;
+        bom:hasCreateDate    "2016-01-19T20:35:59.462Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+        bom:hasFormat        "info:pronom/fmt/121" , "text/xml" ;
+        bom:hasModifiedDate  "2016-01-19T20:35:40Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+        bom:hasSize          "1679027"^^<http://www.w3.org/2001/XMLSchema#long> ;
+        bom:hasTitle         "log.txt" ;
+        bom:metadataFor      <bag://test_pkg/data/obj/curl.ttl> .
