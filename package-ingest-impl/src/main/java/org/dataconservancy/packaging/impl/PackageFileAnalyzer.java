@@ -105,6 +105,7 @@ public class PackageFileAnalyzer
         return packageContainerResources.values();
     }
 
+    //Parses out information from the ReM needed to populate LdpContainerResources.
     private LdpResource populateLdpContainerResource(Model model, Resource ldpContainerResource, List<URI> visitedContainerResources, Path extractDirectory)
         throws URISyntaxException, IOException {
         URI resourceBagUri = new URI(ldpContainerResource.getURI());
@@ -138,6 +139,8 @@ public class PackageFileAnalyzer
         return resource;
     }
 
+    //Parses out file resource information to craft appropriate ldp resource objects.
+    //This will return the non rdf resource which will have the rdf resource set as it's description
     private LdpResource populateFileResource(Resource fileResource, Path extractDirectory)
         throws URISyntaxException, IOException {
 
