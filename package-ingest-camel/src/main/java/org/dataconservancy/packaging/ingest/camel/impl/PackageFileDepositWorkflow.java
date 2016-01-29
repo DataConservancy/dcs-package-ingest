@@ -49,7 +49,7 @@ public class PackageFileDepositWorkflow
 
         /* Construct a camel endpoint URI for polling a specific file */
         String fileSourceURI = String
-                .format("file:%s?delete=true&readLock=changed&readLockCheckInterval=%d",
+                .format("file:%s?delete=true&readLock=changed&readLockCheckInterval=%d&readLockTimeout=600000",
                         config.get(PROP_PACKAGE_DEPOSIT_DIR),
                         Integer.valueOf(config
                                 .getOrDefault(PROP_PACKAGE_POLL_INTERVAL_MS,
