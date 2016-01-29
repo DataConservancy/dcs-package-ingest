@@ -23,8 +23,5 @@ public interface DepositDriver
 
     public static final String ROUTE_DEPOSIT_RESOURCES =
             "direct:deposit_resources";
-
-    public static final String ROUTE_DEPOSIT_REMAP_RELATIONSHIPS =
-            "direct:remap_relationships";
     
 }

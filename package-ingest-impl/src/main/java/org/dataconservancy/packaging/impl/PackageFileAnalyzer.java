@@ -3,15 +3,17 @@ package org.dataconservancy.packaging.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,15 +24,14 @@ import org.apache.jena.atlas.RuntimeIOException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFList;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.ResIterator;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
-import org.apache.jena.rdf.model.StmtIterator;
-import org.apache.jena.util.iterator.ExtendedIterator;
+
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
 import org.dataconservancy.packaging.ingest.LdpResource;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 
@@ -39,6 +40,8 @@ import static org.dataconservancy.packaging.impl.UriUtility.resolveBagUri;
 @Component(service = LdpPackageAnalyzer.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
 public class PackageFileAnalyzer
         implements LdpPackageAnalyzer<File> {
+    
+    public static final String PARAM_EXTRACT_DIR = "pkg.extract.dir";
 
     private final String BAG_INFO_NAME = "bag-info.txt";
     private final String REM_KEY = "Resource-Manifest";
@@ -56,6 +59,16 @@ public class PackageFileAnalyzer
     public PackageFileAnalyzer(OpenPackageService openPackageService, File extractDir) {
         this.packageService = openPackageService;
         this.extractDir = extractDir;
+    }
+    
+    public PackageFileAnalyzer() {
+        packageService = new OpenPackageService();
+    }
+    
+    @Activate
+    public void init(Map<String, String> params) {
+        extractDir = new File(params.get(PARAM_EXTRACT_DIR));
+        extractDir.mkdirs();
     }
 
     @Override

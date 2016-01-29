@@ -31,6 +31,8 @@
     <module>package-ingest-impl</module>
     <module>package-ingest-api</module>
     <module>package-ingest-camel</module>
+    <module>package-ingest-karaf</module>
+    <module>package-ingest-osgi</module>
   </modules>
 
   <!-- Properties ================================================ -->
@@ -42,6 +44,7 @@
     <maven-bundle-plugin.version>3.0.1</maven-bundle-plugin.version>
     <osgi.version>5.0.0</osgi.version>
     <camel.version>2.16.1</camel.version>
+    <karaf.version>4.0.4</karaf.version>
   </properties>
 
   <!-- Build ====================================================== -->

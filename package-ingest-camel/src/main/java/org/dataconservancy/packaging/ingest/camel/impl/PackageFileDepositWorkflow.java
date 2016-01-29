@@ -14,7 +14,6 @@ import static org.dataconservancy.packaging.ingest.camel.NotificationDriver.ROUT
 import static org.dataconservancy.packaging.ingest.camel.NotificationDriver.ROUTE_NOTIFICATION_SUCCESS;
 import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_DEPOSIT_PROVENANCE;
 import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_DEPOSIT_RESOURCES;
-import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_DEPOSIT_REMAP_RELATIONSHIPS;
 import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_TRANSACTION_BEGIN;
 import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_TRANSACTION_COMMIT;
 import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_TRANSACTION_ROLLBACK;
@@ -24,9 +23,10 @@ import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_TRA
  * 
  * @author apb@jhu.edu
  */
-@Component(service = DepositWorkflow.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Component(service = DepositWorkflow.class, configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
 public class PackageFileDepositWorkflow
-        extends RouteBuilder {
+        extends RouteBuilder
+        implements DepositWorkflow {
 
     private Map<String, String> config;
 
@@ -48,29 +48,28 @@ public class PackageFileDepositWorkflow
     public void configure() throws Exception {
 
         /* Construct a camel endpoint URI for polling a specific file */
-        String fileSourceURI =
-                String.format("file:%s?delete=true&readLock=changed&readLockCheckInterval=%d",
-                              config.get(PROP_PACKAGE_DEPOSIT_DIR),
-                              Integer.valueOf(config
-                                      .getOrDefault(PROP_PACKAGE_POLL_INTERVAL_MS,
-                                                    DEFAULT_PACKAGE_POLL_INTERVAL_MS)));
+        String fileSourceURI = String
+                .format("file:%s?delete=true&readLock=changed&readLockCheckInterval=%d",
+                        config.get(PROP_PACKAGE_DEPOSIT_DIR),
+                        Integer.valueOf(config
+                                .getOrDefault(PROP_PACKAGE_POLL_INTERVAL_MS,
+                                              DEFAULT_PACKAGE_POLL_INTERVAL_MS)));
 
         /* Poll the file */
         from(fileSourceURI).id("poll_file").to("direct:deposit");
 
         /* Main deposit workflow */
         from("direct:deposit") /* */
-        .doTry().to(ROUTE_TRANSACTION_BEGIN).to(ROUTE_DEPOSIT_PROVENANCE)
-                .to(ROUTE_DEPOSIT_RESOURCES)
-                .to(ROUTE_DEPOSIT_REMAP_RELATIONSHIPS)
+                .doTry().to(ROUTE_TRANSACTION_BEGIN)
+                .to(ROUTE_DEPOSIT_PROVENANCE).to(ROUTE_DEPOSIT_RESOURCES)
                 .to(ROUTE_TRANSACTION_COMMIT).to(ROUTE_NOTIFICATION_SUCCESS)
                 .doCatch(Exception.class).to("direct:fail_copy_package")
                 .to(ROUTE_TRANSACTION_ROLLBACK).to(ROUTE_NOTIFICATION_FAIL)
                 .end();
 
         /* Copy package to failure directory */
-        from("direct:fail_copy_package")
-                .to(String.format("file:%s?autoCreate=true&keepLastModified=true",
-                                  config.get(PROP_PACKAGE_FAIL_DIR)));
+        from("direct:fail_copy_package").to(String
+                .format("file:%s?autoCreate=true&keepLastModified=true",
+                        config.get(PROP_PACKAGE_FAIL_DIR)));
     }
 }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.0.0 http://karaf.apache.org/xmlns/features/v1.0.0"
+  name="package-ingest-karaf">
+  <repository>mvn:org.apache.camel.karaf/apache-camel/${camel.version}/xml/features</repository>
+  <repository>mvn:io.hawt/hawtio-karaf/${hawtio.version}/xml/features</repository>
+  <feature name="package-ingest-karaf" description="Package Ingest"
+    version="${project.version}">
+    <details>Package Ingest</details>
+    <feature>scr</feature>
+
+
+    <!-- Hawtio for monitoring <feature version="${hawtio.version}">hawtio</feature> -->
+
+    <!-- Camel -->
+    <feature version="${camel.version}">camel-core</feature>
+    <feature version="${camel.version}">camel-http4</feature>
+
+  </feature>
+</features>

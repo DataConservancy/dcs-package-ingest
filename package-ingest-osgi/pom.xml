@@ -6,8 +6,9 @@
     <artifactId>package-ingest</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
-  <artifactId>package-ingest-camel</artifactId>
+  <artifactId>package-ingest-osgi</artifactId>
   <packaging>bundle</packaging>
+
   <build>
     <plugins>
       <plugin>
@@ -26,54 +27,34 @@
   </build>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.dataconservancy.packaging</groupId>
+      <artifactId>package-ingest-camel</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.compendium</artifactId>
       <version>${osgi.version}</version>
       <scope>provided</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.dataconservancy.packaging</groupId>
-      <artifactId>package-ingest-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-core</artifactId>
-      <version>${camel.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-http4</artifactId>
-      <version>${camel.version}</version>
-    </dependency>
     
-    <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-arq</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
+     <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+      <version>${osgi.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.camel</groupId>
-      <artifactId>camel-test</artifactId>
+      <artifactId>camel-core-osgi</artifactId>
       <version>${camel.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <scope>test</scope>
     </dependency>
 
   </dependencies>
+
+
 </project>

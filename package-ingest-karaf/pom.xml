@@ -1,0 +1,92 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.dataconservancy.packaging</groupId>
+    <artifactId>package-ingest</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>package-ingest-karaf</artifactId>
+  <packaging>feature</packaging>
+
+  <properties>
+    <hawtio.version>1.4.59</hawtio.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.karaf.tooling</groupId>
+        <artifactId>karaf-maven-plugin</artifactId>
+        <version>${karaf.version}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <!-- <resolver>(OBR)</resolver> -->
+          <aggregateFeatures>true</aggregateFeatures>
+          <installAllFeaturesByDefault>true</installAllFeaturesByDefault>
+          <resolveDefinedRepositoriesRecursively>true</resolveDefinedRepositoriesRecursively>
+          <karafVersion>4.0.4</karafVersion>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+
+    <!-- These 'provided' are here to exclude them as explicit dependencies. 
+      They'll be provided by a karaf feature, or have an osgi variant that should 
+      be used instead (like the bizarre Apache fat osgi jars) -->
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <version>${camel.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-http4</artifactId>
+      <version>${camel.version}</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    
+    <dependency>
+       <groupId>org.slf4j</groupId>
+       <artifactId>slf4j-api</artifactId>
+       <scope>provided</scope>
+    </dependency>
+
+
+    <!-- Real dependencies  -->
+    <dependency>
+      <groupId>org.dataconservancy.packaging</groupId>
+      <artifactId>package-ingest-camel</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.dataconservancy.packaging</groupId>
+      <artifactId>package-ingest-impl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.dataconservancy.packaging</groupId>
+      <artifactId>package-ingest-osgi</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+   
+  </dependencies>
+</project>
