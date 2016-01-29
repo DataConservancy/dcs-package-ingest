@@ -56,10 +56,10 @@ public class PackageFileDepositWorkflow
                                               DEFAULT_PACKAGE_POLL_INTERVAL_MS)));
 
         /* Poll the file */
-        from(fileSourceURI).id("poll_file").to("direct:deposit");
+        from(fileSourceURI).id("deposit-poll-file").to("direct:deposit");
 
         /* Main deposit workflow */
-        from("direct:deposit") /* */
+        from("direct:deposit").id("deposit-workflow") /* */
                 .doTry().to(ROUTE_TRANSACTION_BEGIN)
                 .to(ROUTE_DEPOSIT_PROVENANCE).to(ROUTE_DEPOSIT_RESOURCES)
                 .to(ROUTE_TRANSACTION_COMMIT).to(ROUTE_NOTIFICATION_SUCCESS)
@@ -68,8 +68,9 @@ public class PackageFileDepositWorkflow
                 .end();
 
         /* Copy package to failure directory */
-        from("direct:fail_copy_package").to(String
-                .format("file:%s?autoCreate=true&keepLastModified=true",
-                        config.get(PROP_PACKAGE_FAIL_DIR)));
+        from("direct:fail_copy_package").id("deposit-fail")
+                .to(String.format(
+                                  "file:%s?autoCreate=true&keepLastModified=true",
+                                  config.get(PROP_PACKAGE_FAIL_DIR)));
     }
 }
