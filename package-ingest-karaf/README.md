@@ -7,7 +7,7 @@ maven repo
 * Launch apache karaf, `${karaf.home}/bin/karaf`
 * At the Karaf console:
     * `feature:repo-add mvn:org.dataconservancy.packaging/package-ingest-karaf/LATEST/xml/features`
-    * `feature:install package-ingest`
+    * `feature:install package-ingest-karaf`
     
 ## Configuration ##
 
