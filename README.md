@@ -14,16 +14,23 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-## Simple Data Conservancy Package Ingest Service ##
+# Simple Data Conservancy Package Ingest Service #
 
 This is a description of the package ingest service
 
-### Quick start ###
-
-#### Prerequisites ####
+## Usage ##
+### Prerequisites ###
  - Oracle JDK 8
+ - Apache Karaf 4.0+
+ 
+### Installation in Karaf ###
+See [Karaf install instructions](package-ingest-karaf/README.md).  
 
-#### Integration testing ####
+### Configuration ###
+See [Karaf configuration instructions](package-ingest-karaf/README.md#Configuration)
+## Development ##
+
+### Integration testing ###
 Integration tests launch an instance of Fedora 4 for the entire (failsafe) integration test lifecycle duration.  To run all integration tests, simply do 
 `mvn verify`
 
@@ -34,7 +41,7 @@ The default port is 8080, but this can be changed via specifying a system proper
 
 
 
-##### Running Fedora standalone #####
+### Running Fedora standalone ###
 The embedded Fedora instance used for testing can be run manually via
 `mvn cargo:run`
 

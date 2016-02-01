@@ -34,10 +34,21 @@ import org.dataconservancy.packaging.ingest.LdpResource;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import static org.dataconservancy.packaging.impl.UriUtility.resolveBagUri;
 
-@Component(service = LdpPackageAnalyzer.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@ObjectClassDefinition(name = "org.dataconservancy.packaging.impl.PackageFileAnalyzer", description = "Unpacks and analyzes package files for ingest")
+@interface PackageFileAnalyzerConfig {
+    
+    @AttributeDefinition(description = "Directory for temporary unpacking package contents as necessary")
+    String pkg_extract_dir() default "/tmp";
+}
+
+@Component(service = LdpPackageAnalyzer.class, configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
+@Designate(ocd = PackageFileAnalyzerConfig.class)
 public class PackageFileAnalyzer
         implements LdpPackageAnalyzer<File> {
     
@@ -66,8 +77,8 @@ public class PackageFileAnalyzer
     }
     
     @Activate
-    public void init(Map<String, String> params) {
-        extractDir = new File(params.get(PARAM_EXTRACT_DIR));
+    public void init(PackageFileAnalyzerConfig config) {
+        extractDir = new File(config.pkg_extract_dir());
         extractDir.mkdirs();
     }
 

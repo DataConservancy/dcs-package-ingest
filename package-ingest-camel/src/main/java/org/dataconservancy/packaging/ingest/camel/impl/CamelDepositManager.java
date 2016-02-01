@@ -2,7 +2,10 @@
 package org.dataconservancy.packaging.ingest.camel.impl;
 
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.camel.CamelContext;
 
@@ -11,6 +14,7 @@ import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.dataconservancy.packaging.ingest.camel.DepositManager;
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
@@ -29,6 +33,11 @@ public class CamelDepositManager
     private Map<DepositWorkflow, CamelContext> contexts =
             new ConcurrentHashMap<>();
 
+    private Queue<DepositWorkflow> pendingWorkflows =
+            new ConcurrentLinkedQueue<>();
+
+    private AtomicBoolean active = new AtomicBoolean(false);
+
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     public void setContextFactory(ContextFactory factory) {
         this.cxtFactory = factory;
@@ -46,15 +55,32 @@ public class CamelDepositManager
 
     @Reference(cardinality = ReferenceCardinality.MULTIPLE)
     public void addDepositWorkflow(DepositWorkflow workflow) {
-        CamelContext context = cxtFactory.newContext();
-        try {
-            notification.addRoutesToCamelContext(context);
-            deposit.addRoutesToCamelContext(context);
-            workflow.addRoutesToCamelContext(context);
+        initContext(workflow);
+    }
 
-            context.start();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    @Activate
+    public void init() {
+        active.set(true);
+        while (pendingWorkflows.peek() != null) {
+            initContext(pendingWorkflows.remove());
+        }
+    }
+
+    public void initContext(DepositWorkflow workflow) {
+        if (active.get()) {
+            try {
+                CamelContext context = cxtFactory.newContext();
+                contexts.put(workflow, context);
+                notification.addRoutesToCamelContext(context);
+                deposit.addRoutesToCamelContext(context);
+                workflow.addRoutesToCamelContext(context);
+
+                context.start();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            pendingWorkflows.add(workflow);
         }
     }
 

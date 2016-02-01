@@ -136,7 +136,7 @@
 
     <dependency>
       <groupId>org.dataconservancy.packaging</groupId>
-      <artifactId>package-ingest-integration</artifactId>
+      <artifactId>package-ingest-impl</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

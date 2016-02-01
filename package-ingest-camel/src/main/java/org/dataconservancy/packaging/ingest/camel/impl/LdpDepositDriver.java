@@ -33,6 +33,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Reference;
 
+
 /**
  * Deposits package content into an LDP repository.
  * 
@@ -43,11 +44,6 @@ import org.osgi.service.component.annotations.Reference;
 public class LdpDepositDriver
         extends RouteBuilder
         implements DepositDriver {
-
-    Map<String, String> config;
-
-    /** URI of the LDP container that will be deposited into */
-    public static final String PROP_LDP_CONTAINER = "deposit.ldp.container";
 
     /**
      * Collection of {@link LdpResource} that are root(s) of the tree of objects
@@ -86,8 +82,7 @@ public class LdpDepositDriver
     }
 
     @Activate
-    public void init(Map<String, String> config) {
-        this.config = config;
+    public void init() {
     }
 
     @Reference
@@ -105,8 +100,7 @@ public class LdpDepositDriver
          * Body: File
          * Headers: -
          */
-        from(ROUTE_DEPOSIT_RESOURCES)
-                .id("ldp-deposit-all-resources")
+        from(ROUTE_DEPOSIT_RESOURCES).id("ldp-deposit-all-resources")
                 .to("direct:_setup_for_deposit")
                 .process(m -> m.getIn()
                         .setHeader(HEADER_LDP_RESOURCES,
@@ -117,10 +111,7 @@ public class LdpDepositDriver
                 .enrich("direct:_remap_uris", ((orig, updated) -> orig));
 
         /* Initial setup for a series of subsequent LDP deposits */
-        from("direct:_setup_for_deposit")
-                .id("ldp-deposit-setup")
-                .setHeader(Exchange.HTTP_URI,
-                           constant(config.get(PROP_LDP_CONTAINER)))
+        from("direct:_setup_for_deposit").id("ldp-deposit-setup")
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .setHeader(HEADER_URI_MAP, constant(new HashMap<>()));
 
@@ -135,19 +126,19 @@ public class LdpDepositDriver
          * Body: -
          * Headers: HEADER_LDP_RESOURCES: Collection<LdpResource>
          */
-        from("direct:_deposit_iterate")
-                .id(ID_DEPOSIT_ITERATE)
+        from("direct:_deposit_iterate").id(ID_DEPOSIT_ITERATE)
                 .split(header(HEADER_LDP_RESOURCES), MERGE_URI_MAP)
-                .stopOnException()
-                .enrich("direct:_deposit_ldpResource",
-                        (existing, deposited) -> {
-                            existing.getIn()
-                                    .setHeader(HttpHeaders.LOCATION,
-                                               deposited
-                                                       .getIn()
-                                                       .getHeader(HttpHeaders.LOCATION));
-                            return MERGE_URI_MAP.aggregate(existing, deposited);
-                        })
+                .stopOnException().enrich("direct:_deposit_ldpResource",
+                                          (existing, deposited) -> {
+                                              existing.getIn()
+                                                      .setHeader(HttpHeaders.LOCATION,
+                                                                 deposited
+                                                                         .getIn()
+                                                                         .getHeader(HttpHeaders.LOCATION));
+                                              return MERGE_URI_MAP
+                                                      .aggregate(existing,
+                                                                 deposited);
+                                          })
                 .setHeader(HEADER_LDP_RESOURCES,
                            bodyAs(LdpResource.class).method("getChildren"))
                 .setHeader(Exchange.HTTP_URI, header(HttpHeaders.LOCATION))
@@ -156,8 +147,7 @@ public class LdpDepositDriver
         /*
          * Deposit an LDP resource, and map the location
          */
-        from("direct:_deposit_ldpResource")
-                .id("ldp-deposit-resource")
+        from("direct:_deposit_ldpResource").id("ldp-deposit-resource")
                 .process(e -> {
                     LdpResource resource = e.getIn().getBody(LdpResource.class);
 
@@ -183,18 +173,15 @@ public class LdpDepositDriver
                      * parent. POST to it to create a child. Otherwise, use the
                      * supplied Exchange.HTTP_URI.
                      */
-                    e.getIn()
-                            .setHeader(Exchange.HTTP_URI,
-                                       e.getIn()
-                                               .getHeader("Location",
-                                                          e.getIn()
-                                                                  .getHeader(Exchange.HTTP_URI,
-                                                                             String.class),
-                                                          String.class));
+                    e.getIn().setHeader(Exchange.HTTP_URI,
+                                        e.getIn().getHeader("Location",
+                                                            e.getIn()
+                                                                    .getHeader(Exchange.HTTP_URI,
+                                                                               String.class),
+                                                            String.class));
 
-                }).to("direct:_http_preserve_body")
-                .to("direct:_update_uri_map").choice()
-                .when(header(HEADER_RESOURCE_DESCRIPTION).isNotNull())
+                }).to("direct:_http_preserve_body").to("direct:_update_uri_map")
+                .choice().when(header(HEADER_RESOURCE_DESCRIPTION).isNotNull())
                 .enrich("direct:_deposit_resource_description", MERGE_URI_MAP)
                 .end();
 
@@ -202,16 +189,13 @@ public class LdpDepositDriver
          * Perform an http operation, and merge the result headers back into the
          * original message, preserving its original body
          */
-        from("direct:_http_preserve_body")
-                .enrich("direct:_do_http_op",
-                        ((orig, http) -> {
-                            http.getIn()
-                                    .getHeaders()
-                                    .entrySet()
-                                    .forEach(e -> orig.getIn().getHeaders()
-                                            .put(e.getKey(), e.getValue()));
-                            return orig;
-                        }));
+        from("direct:_http_preserve_body").id("ldp-http-preserve-body")
+                .enrich("direct:_do_http_op", ((orig, http) -> {
+                    http.getIn().getHeaders().entrySet()
+                            .forEach(e -> orig.getIn().getHeaders()
+                                    .put(e.getKey(), e.getValue()));
+                    return orig;
+                }));
 
         /* Sanitize headers and perform an HTTP operation */
         from("direct:_do_http_op").id(ID_HTTP_OPERATION)
@@ -219,11 +203,9 @@ public class LdpDepositDriver
 
         /* Updates the URI map based on Location header */
         from("direct:_update_uri_map").id("ldp-update-uri-map")
-                .process(e -> uriMap(e).put(e.getIn()
-                                                    .getHeader(HEADER_ORIG_URI,
-                                                               String.class),
-                                            e.getIn().getHeader("Location",
-                                                                String.class)));
+                .process(e -> uriMap(e)
+                        .put(e.getIn().getHeader(HEADER_ORIG_URI, String.class),
+                             e.getIn().getHeader("Location", String.class)));
 
         /*
          * Deposit a resources that describes another resource (indicated in LDP
@@ -232,29 +214,26 @@ public class LdpDepositDriver
          * header, and add triples to it.
          */
         from("direct:_deposit_resource_description")
-                .id("ldp-deposit-resource-description")
-                .process(e -> {
+                .id("ldp-deposit-resource-description").process(e -> {
                     LdpResource description =
                             e.getIn().getHeader(HEADER_RESOURCE_DESCRIPTION,
                                                 LdpResource.class);
-                    String descriptionURI =
-                            getLinkRel(e.getIn()
-                                               .getHeader("Link", String.class),
-                                       "describedby");
+                    String descriptionURI = getLinkRel(e.getIn()
+                            .getHeader("Link", String.class), "describedby");
                     uriMap(e).put(description.getURI().toString(),
                                   descriptionURI);
                     e.getIn().setHeader(Exchange.CONTENT_TYPE,
                                         description.getMediaType());
                     e.getIn().setHeader(Exchange.HTTP_URI, descriptionURI);
-                    e.getIn()
-                            .setBody(IOUtils.toByteArray(description.getBody()));
+                    e.getIn().setBody(IOUtils
+                            .toByteArray(description.getBody()));
                 }).to("direct:_merge_ldpResource");
 
         /*
          * Merge rdf in the body with the contents of the resource at
          * Exchange.HTTP_URI
          */
-        from("direct:_merge_ldpResource")
+        from("direct:_merge_ldpResource").id("ldp-merge-resource")
                 .enrich("direct:_retrieveForUpdate", MERGE_RDF)
                 .setHeader(HttpHeaders.IF_MATCH, header(HttpHeaders.ETAG))
                 .setHeader(Exchange.CONTENT_TYPE, constant("text/turtle"))
@@ -262,17 +241,17 @@ public class LdpDepositDriver
                 .to("direct:_http_preserve_body");
 
         /* Retrieve the current turtle representation of an object */
-        from("direct:_retrieveForUpdate")
+        from("direct:_retrieveForUpdate").id("ldp-retrieve-for-update")
                 .setHeader(HttpHeaders.ACCEPT, constant("text/turtle"))
-                .setHeader(Exchange.HTTP_METHOD, constant("GET"))
-                .doTry()
+                .setHeader(Exchange.HTTP_METHOD, constant("GET")).doTry()
                 .to("direct:_do_http_op")
                 .doCatch(HttpOperationFailedException.class)
                 .onWhen(e -> e.getException(HttpOperationFailedException.class)
-                        .getStatusCode() == 406).setBody(constant("")).end();
+                        .getStatusCode() == 406)
+                .setBody(constant("")).end();
 
         /* Strip all headers except for certain HTTP headers used in requests */
-        from("direct:_sanitize_headers")
+        from("direct:_sanitize_headers").id("lsp-sanitize-headers")
                 .removeHeaders("*",
                                Exchange.HTTP_URI,
                                Exchange.CONTENT_TYPE,
@@ -285,21 +264,15 @@ public class LdpDepositDriver
                                "Slug");
 
         /* Remap original URIs to ldp URIs */
-        from("direct:_remap_uris")
-                .id(ID_DEPOSIT_REMAP)
+        from("direct:_remap_uris").id("ldp-remap-uris").id(ID_DEPOSIT_REMAP)
                 .split(header(HEADER_URI_MAP).method("values"), ((o, n) -> o))
-                .stopOnException()
-                .setHeader(Exchange.HTTP_URI, body())
-                .enrich("direct:_retrieveForUpdate",
-                        (orig, retrieved) -> {
-                            retrieved
-                                    .getIn()
-                                    .setHeader(HEADER_URI_MAP,
-                                               orig.getIn()
-                                                       .getHeader(HEADER_URI_MAP));
-                            return retrieved;
-                        })
-                .process(e -> {
+                .stopOnException().setHeader(Exchange.HTTP_URI, body())
+                .enrich("direct:_retrieveForUpdate", (orig, retrieved) -> {
+                    retrieved.getIn()
+                            .setHeader(HEADER_URI_MAP,
+                                       orig.getIn().getHeader(HEADER_URI_MAP));
+                    return retrieved;
+                }).process(e -> {
                     Map<String, String> uriMap = uriMap(e);
                     Model model = ModelFactory.createDefaultModel();
                     StreamRDF sink = StreamRDFLib.graph(model.getGraph());
@@ -312,10 +285,10 @@ public class LdpDepositDriver
                                     .mapWith(RDFNode::asResource))
                             .filterKeep(r -> uriMap.containsKey(r.toString()))
                             .forEachRemaining(r -> {
-                                e.getIn().setHeader("updated", true);
-                                ResourceUtils.renameResource(r, uriMap.get(r
-                                        .toString()));
-                            });
+                        e.getIn().setHeader("updated", true);
+                        ResourceUtils.renameResource(r,
+                                                     uriMap.get(r.toString()));
+                    });
 
                     writeRDFBody(model, e);
 
@@ -381,10 +354,10 @@ public class LdpDepositDriver
         RDFDataMgr
                 .parse(sink,
                        new TypedInputStream(e.getIn()
-                               .getBody(InputStream.class), ContentType
-                               .create(e.getIn()
-                                       .getHeader(Exchange.CONTENT_TYPE,
-                                                  String.class))),
+                               .getBody(InputStream.class),
+                                            ContentType.create(e.getIn()
+                                                    .getHeader(Exchange.CONTENT_TYPE,
+                                                               String.class))),
                        e.getIn().getHeader(HttpHeaders.LOCATION, String.class));
     }
 

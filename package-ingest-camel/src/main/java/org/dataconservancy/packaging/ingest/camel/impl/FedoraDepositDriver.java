@@ -1,18 +1,31 @@
 
 package org.dataconservancy.packaging.ingest.camel.impl;
 
-import java.util.Map;
+import java.io.File;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.http.HttpHeaders;
 
+import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+
+@ObjectClassDefinition(name = "org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver", description = "Transactional Fedora LDP Deposit Driver")
+@interface FedoraConfig {
+
+    @AttributeDefinition(description = "Fedora base URI.  Points to the 'root' container in Fedora")
+    String fcrepo_baseuri() default "http://localhost:8080/fedora/rest";
+}
 
 @Component(service = DepositDriver.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Designate(ocd = FedoraConfig.class)
 public class FedoraDepositDriver
         extends LdpDepositDriver {
 
@@ -26,36 +39,41 @@ public class FedoraDepositDriver
 
     static final String ID_ROLLBACK_TRANSACTION = "fedora-rollback-transaction";
 
-    private String fedoraBaseURI;
+    private FedoraConfig config;
 
     @Activate
-    public void init(Map<String, String> config) {
-        super.init(config);
-        fedoraBaseURI =
-                config.getOrDefault(PROP_FEDORA_BASEURI,
-                                    "http://localhost:8080/fedora/rest");
+    public void init(FedoraConfig config) {
+        super.init();
+
+        this.config = config;
+    }
+
+    @Reference
+    public void setPackageAnalyzer(LdpPackageAnalyzer<File> analyzer) {
+        super.setPackageAnalyzer(analyzer);
     }
 
     @Override
     protected void configureTransactions() {
         /* TODO */
-        from(ROUTE_TRANSACTION_BEGIN).enrich("direct:_doStartTransaction",
-                                             TX_DETAILS);
+        from(ROUTE_TRANSACTION_BEGIN).id("fedora-tx-begin")
+                .enrich("direct:_doStartTransaction", TX_DETAILS);
 
-        from(ROUTE_TRANSACTION_COMMIT).enrich("direct:_doCommitTransaction",
-                                              ((orig, resp) -> orig));
+        from(ROUTE_TRANSACTION_COMMIT).id("fedora-tx-commit")
+                .enrich("direct:_doCommitTransaction", ((orig, resp) -> orig));
 
-        from(ROUTE_TRANSACTION_ROLLBACK)
-                .enrich("direct:_doRollbackTransaction", ((orig, resp) -> orig));
+        from(ROUTE_TRANSACTION_ROLLBACK).id("fedora-tx-rollback")
+                .enrich("direct:_doRollbackTransaction",
+                        ((orig, resp) -> orig));
 
-        from(ROUTE_TRANSACTION_CANONICALIZE)
+        from(ROUTE_TRANSACTION_CANONICALIZE).id("fedora-tx-canonicalize")
                 .process(e -> {
                     e.getIn()
                             .setHeader(Exchange.HTTP_URI,
                                        headerString(e, Exchange.HTTP_URI)
                                                .replace(headerString(e,
                                                                      HEADER_FCTRPO_TX_BASEURI),
-                                                        fedoraBaseURI));
+                                                        config.fcrepo_baseuri()));
                 });
 
         /*
@@ -63,11 +81,10 @@ public class FedoraDepositDriver
          * via HTTP, sends a POST to the fcr:tx endpoint, which creates
          * a transaction in Fedora.
          */
-        from("direct:_doStartTransaction")
-                .id(ID_START_TRANSACTION)
-                .removeHeaders("*", fedoraBaseURI)
+        from("direct:_doStartTransaction").id(ID_START_TRANSACTION)
+                .removeHeaders("*", config.fcrepo_baseuri())
                 .setHeader(Exchange.HTTP_URI,
-                           constant(fedoraBaseURI + "/fcr:tx"))
+                           constant(config.fcrepo_baseuri() + "/fcr:tx"))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .to("http4:fcrepo-host");
 
@@ -76,13 +93,12 @@ public class FedoraDepositDriver
          * via HTTP, sends a POST to the local transaction's
          * fcr:tx/fcr:commit endpoint.
          */
-        from("direct:_doCommitTransaction")
-                .id(ID_COMMIT_TRANSACTION)
+        from("direct:_doCommitTransaction").id(ID_COMMIT_TRANSACTION)
                 .removeHeaders("*", HEADER_FCTRPO_TX_BASEURI)
                 .setHeader(Exchange.HTTP_URI,
-                           simple(String
-                                   .format("${in.header.%s}/fcr:tx/fcr:commit",
-                                           HEADER_FCTRPO_TX_BASEURI)))
+                           simple(String.format(
+                                                "${in.header.%s}/fcr:tx/fcr:commit",
+                                                HEADER_FCTRPO_TX_BASEURI)))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .to("http4:fcrepo-host");
 
@@ -91,13 +107,12 @@ public class FedoraDepositDriver
          * HTTP, sends a POST to the local transaction's
          * fcr:tx/fcr:rollback endpoint.
          */
-        from("direct:_doRollbackTransaction")
-                .id(ID_ROLLBACK_TRANSACTION)
+        from("direct:_doRollbackTransaction").id(ID_ROLLBACK_TRANSACTION)
                 .removeHeaders("*", HEADER_FCTRPO_TX_BASEURI)
                 .setHeader(Exchange.HTTP_URI,
-                           simple(String
-                                   .format("${in.header.%s}/fcr:tx/fcr:rollback",
-                                           HEADER_FCTRPO_TX_BASEURI)))
+                           simple(String.format(
+                                                "${in.header.%s}/fcr:tx/fcr:rollback",
+                                                HEADER_FCTRPO_TX_BASEURI)))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .to("http4:fcrepo-host");
 
@@ -111,7 +126,7 @@ public class FedoraDepositDriver
         orig.getIn().setHeader(HEADER_FCTRPO_TX_BASEURI, txBase);
 
         orig.getIn().setHeader(Exchange.HTTP_URI,
-                               dest.replace(fedoraBaseURI, txBase));
+                               dest.replace(config.fcrepo_baseuri(), txBase));
         return orig;
     };
 
