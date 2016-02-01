@@ -37,7 +37,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.HEADER_LDP_RESOURCES;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.HEADER_URI_MAP;
-import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.PROP_LDP_CONTAINER;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.ID_DEPOSIT_ITERATE;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.ID_DEPOSIT_REMAP;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.ID_HTTP_OPERATION;
@@ -109,7 +108,8 @@ public class LdpDepositDriverTest
                                         {
                                             put(HEADER_LDP_RESOURCES,
                                                 Arrays.asList(parent));
-                                            put(HEADER_URI_MAP, new HashMap<>());
+                                            put(HEADER_URI_MAP,
+                                                new HashMap<>());
                                             put(TEST_HEADER, TEST_HEADER_VALUE);
                                         }
                                     });
@@ -131,10 +131,9 @@ public class LdpDepositDriverTest
         assertEquals(4, uriMap.size());
 
         /* Make sure we've mapped our objects */
-        Arrays.asList(parent, child1, child2, child3)
-                .stream()
-                .forEach(r -> assertTrue(uriMap.containsKey(r.getURI()
-                        .toString())));
+        Arrays.asList(parent, child1, child2, child3).stream()
+                .forEach(r -> assertTrue(uriMap
+                        .containsKey(r.getURI().toString())));
 
         /* Assure we do not erase/mutate anything we don't know about */
         assertEquals(ORIG_BODY, filterMessage.getBody());
@@ -163,13 +162,13 @@ public class LdpDepositDriverTest
                 .thenReturn(URI.create(DESCRIPTION_RESOURCE_URI));
         when(descriptiveResource.getChildren()).thenReturn(Arrays.asList());
         when(descriptiveResource.getMediaType()).thenReturn("text/turtle");
-        when(descriptiveResource.getBody())
-                .thenReturn(IOUtils.toInputStream(String
-                        .format("<%s> a <test:Binary> .\n"
-                                        + "<%s> <test:inverseRel> <%s> .",
-                                BINARY_RESOURCE_URI,
-                                DESCRIPTION_RESOURCE_URI,
-                                PARENT_RESOURCE_URI)));
+        when(descriptiveResource.getBody()).thenReturn(IOUtils
+                .toInputStream(String.format(
+                                             "<%s> a <test:Binary> .\n"
+                                                     + "<%s> <test:inverseRel> <%s> .",
+                                             BINARY_RESOURCE_URI,
+                                             DESCRIPTION_RESOURCE_URI,
+                                             PARENT_RESOURCE_URI)));
 
         LdpResource binaryResource = mock(LdpResource.class);
         when(binaryResource.getChildren()).thenReturn(Arrays.asList());
@@ -238,9 +237,10 @@ public class LdpDepositDriverTest
                              .getProperty("ldp:contains")).toList().size());
 
         /* Make sure this child is the binary */
-        assertEquals(uriMap.get(BINARY_RESOURCE_URI), model
-                .listObjectsOfProperty(model.getProperty("ldp:contains"))
-                .toList().get(0).toString());
+        assertEquals(uriMap.get(BINARY_RESOURCE_URI),
+                     model.listObjectsOfProperty(model
+                             .getProperty("ldp:contains")).toList().get(0)
+                             .toString());
 
         /*
          * Make sure our test rel is still there, and that it points to the
@@ -306,11 +306,10 @@ public class LdpDepositDriverTest
                                 .setHeader(Exchange.CONTENT_TYPE,
                                            constant("text/turtle"))
                                 .process(e -> {
-                                    e.getIn().setBody(objectContentMap.get(e
-                                            .getIn()
-                                            .getHeader(Exchange.HTTP_URI)));
-                                    e.getIn().setHeader(HttpHeaders.ETAG, ETAG);
-                                });
+                            e.getIn().setBody(objectContentMap.get(e.getIn()
+                                    .getHeader(Exchange.HTTP_URI)));
+                            e.getIn().setHeader(HttpHeaders.ETAG, ETAG);
+                        });
 
                         interceptSendToEndpoint("direct:_do_http_op")
                                 .skipSendToOriginalEndpoint()
@@ -359,9 +358,12 @@ public class LdpDepositDriverTest
             assertTrue(uriMap.keySet().stream()
                     .filter(uri -> body.contains(uri)).count() == 0);
 
-            /* Assert that this is a PUT with TURTLE, and that IF-Match is set */
-            assertEquals(e.getIn()
-                    .getHeader(Exchange.HTTP_METHOD, String.class), "PUT");
+            /*
+             * Assert that this is a PUT with TURTLE, and that IF-Match is set
+             */
+            assertEquals(e.getIn().getHeader(Exchange.HTTP_METHOD,
+                                             String.class),
+                         "PUT");
             assertEquals(e.getIn().getHeader(Exchange.CONTENT_TYPE,
                                              String.class),
                          "text/turtle");
@@ -373,12 +375,7 @@ public class LdpDepositDriverTest
     @SuppressWarnings("unchecked")
     protected RouteBuilder createRouteBuilder() {
         driver = new LdpDepositDriver();
-        driver.init(new HashMap<String, String>() {
-
-            {
-                put(PROP_LDP_CONTAINER, "test");
-            }
-        });
+        driver.init();
 
         return new RouteBuilder() {
 
@@ -396,11 +393,10 @@ public class LdpDepositDriverTest
                 from("direct:testRemapUris").to("direct:_remap_uris")
                         .to("mock:out");
 
-                from("direct:fakeDeposit").process(e -> e
-                        .getIn()
+                from("direct:fakeDeposit").process(e -> e.getIn()
                         .getHeader(HEADER_URI_MAP, Map.class)
                         .put(e.getIn().getBody(LdpResource.class).getURI()
-                                     .toString(),
+                                .toString(),
                              deposited(e.getIn().getBody(LdpResource.class)
                                      .getURI())));
             }
@@ -423,18 +419,15 @@ public class LdpDepositDriverTest
         @Override
         public void configure() throws Exception {
             interceptSendToEndpoint("http4:ldp-host")
-                    .skipSendToOriginalEndpoint()
-                    .choice()
+                    .skipSendToOriginalEndpoint().choice()
                     .when(header(Exchange.HTTP_METHOD).isEqualTo("GET"))
                     .setHeader(HttpHeaders.ETAG, constant("etag"))
                     .process(e -> {
-                        String uri =
-                                e.getIn().getHeader(Exchange.HTTP_URI,
-                                                    String.class);
+                        String uri = e.getIn().getHeader(Exchange.HTTP_URI,
+                                                         String.class);
                         String type = mediaTypes.get(uri);
-                        String accept =
-                                e.getIn().getHeader(HttpHeaders.ACCEPT,
-                                                    String.class);
+                        String accept = e.getIn().getHeader(HttpHeaders.ACCEPT,
+                                                            String.class);
                         e.getIn().setHeader(Exchange.CONTENT_TYPE, type);
                         if (accept == null || accept.equals(type)) {
                             e.getIn().setBody(httpBodies.get(uri));
@@ -446,38 +439,33 @@ public class LdpDepositDriverTest
                                                                    new HashMap<>(),
                                                                    "");
                         }
-                    })
-                    .when(header(Exchange.HTTP_METHOD).isEqualTo("PUT"))
+                    }).when(header(Exchange.HTTP_METHOD).isEqualTo("PUT"))
                     .process(e -> {
-                        String uri =
-                                e.getIn().getHeader(Exchange.HTTP_URI,
-                                                    String.class);
+                        String uri = e.getIn().getHeader(Exchange.HTTP_URI,
+                                                         String.class);
                         assertNotNull(uri);
                         httpBodies.put(uri, e.getIn().getBody(String.class));
                         mediaTypes.put(uri,
-                                       e.getIn()
-                                               .getHeader(Exchange.CONTENT_TYPE,
-                                                          String.class));
+                                       e.getIn().getHeader(
+                                                           Exchange.CONTENT_TYPE,
+                                                           String.class));
 
-                    })
-                    .when(header(Exchange.HTTP_METHOD).isEqualTo("POST"))
+                    }).when(header(Exchange.HTTP_METHOD).isEqualTo("POST"))
                     .process(e -> {
-                        String uri =
-                                "http://example.org/deposited/"
-                                        + depositCount.incrementAndGet();
+                        String uri = "http://example.org/deposited/"
+                                + depositCount.incrementAndGet();
                         httpBodies.put(uri, e.getIn().getBody(String.class));
 
                         mediaTypes.put(uri,
-                                       e.getIn()
-                                               .getHeader(Exchange.CONTENT_TYPE,
-                                                          String.class));
+                                       e.getIn().getHeader(
+                                                           Exchange.CONTENT_TYPE,
+                                                           String.class));
 
                         e.getIn().setHeader(HttpHeaders.LOCATION, uri);
                         e.getIn().setHeader(HttpHeaders.ETAG, "etag");
 
-                        String parentURI =
-                                e.getIn().getHeader(Exchange.HTTP_URI,
-                                                    String.class);
+                        String parentURI = e.getIn()
+                                .getHeader(Exchange.HTTP_URI, String.class);
 
                         /*
                          * add ldp:contains. Yes, it's not the real LDP URI, but
@@ -485,11 +473,10 @@ public class LdpDepositDriverTest
                          */
                         if (httpBodies.containsKey(parentURI)) {
                             String parentBody = httpBodies.get(parentURI);
-                            parentBody =
-                                    parentBody
-                                            + String.format("\n<%s> <ldp:contains> <%s> .",
-                                                            parentURI,
-                                                            uri);
+                            parentBody = parentBody
+                                    + String.format("\n<%s> <ldp:contains> <%s> .",
+                                                    parentURI,
+                                                    uri);
                             httpBodies.put(parentURI, parentBody);
                         }
 
@@ -498,19 +485,16 @@ public class LdpDepositDriverTest
                             String descriptionURI =
                                     "http://example.org/descriptions/"
                                             + depositCount.incrementAndGet();
-                            httpBodies.put(descriptionURI, String
-                                    .format("<%s> <iana:describes> <%s> .",
-                                            descriptionURI,
-                                            uri));
+                            httpBodies.put(descriptionURI,
+                                           String.format("<%s> <iana:describes> <%s> .",
+                                                         descriptionURI,
+                                                         uri));
                             mediaTypes.put(descriptionURI, "text/turtle");
-                            e.getIn()
-                                    .setHeader("Link",
-                                               String.format("<%s> rel=describedby",
-                                                             descriptionURI));
+                            e.getIn().setHeader("Link",
+                                                String.format("<%s> rel=describedby",
+                                                              descriptionURI));
                         }
-                    })
-                    .otherwise()
-                    .process(e -> {
+                    }).otherwise().process(e -> {
                         throw new RuntimeException("Unknown http method "
                                 + e.getIn().getHeader(Exchange.HTTP_METHOD));
                     });

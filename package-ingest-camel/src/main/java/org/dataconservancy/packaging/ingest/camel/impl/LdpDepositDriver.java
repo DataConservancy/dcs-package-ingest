@@ -33,6 +33,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Reference;
 
+
 /**
  * Deposits package content into an LDP repository.
  * 
@@ -43,11 +44,6 @@ import org.osgi.service.component.annotations.Reference;
 public class LdpDepositDriver
         extends RouteBuilder
         implements DepositDriver {
-
-    Map<String, String> config;
-
-    /** URI of the LDP container that will be deposited into */
-    public static final String PROP_LDP_CONTAINER = "deposit.ldp.container";
 
     /**
      * Collection of {@link LdpResource} that are root(s) of the tree of objects
@@ -86,8 +82,7 @@ public class LdpDepositDriver
     }
 
     @Activate
-    public void init(Map<String, String> config) {
-        this.config = config;
+    public void init() {
     }
 
     @Reference
@@ -117,8 +112,6 @@ public class LdpDepositDriver
 
         /* Initial setup for a series of subsequent LDP deposits */
         from("direct:_setup_for_deposit").id("ldp-deposit-setup")
-                .setHeader(Exchange.HTTP_URI,
-                           constant(config.get(PROP_LDP_CONTAINER)))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .setHeader(HEADER_URI_MAP, constant(new HashMap<>()));
 

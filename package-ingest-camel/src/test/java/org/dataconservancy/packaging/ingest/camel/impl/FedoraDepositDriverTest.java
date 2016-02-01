@@ -1,6 +1,8 @@
 
 package org.dataconservancy.packaging.ingest.camel.impl;
 
+import java.lang.annotation.Annotation;
+
 import java.util.HashMap;
 
 import org.apache.camel.EndpointInject;
@@ -25,7 +27,6 @@ import static org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDrive
 import static org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver.ID_COMMIT_TRANSACTION;
 import static org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver.ID_ROLLBACK_TRANSACTION;
 import static org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver.ID_START_TRANSACTION;
-import static org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver.PROP_FEDORA_BASEURI;
 
 @SuppressWarnings("serial")
 public class FedoraDepositDriverTest
@@ -81,10 +82,12 @@ public class FedoraDepositDriverTest
         assertMockEndpointsSatisfied();
 
         Message msg = mockOut.getExchanges().get(0).getIn();
-        assertEquals(FEDORA_TX_BASEURI + PATH, msg.getHeader(Exchange.HTTP_URI));
+        assertEquals(FEDORA_TX_BASEURI + PATH,
+                     msg.getHeader(Exchange.HTTP_URI));
         assertEquals(TEST_BODY, msg.getBody());
         assertEquals(TEST_HEADER_VALUE, msg.getHeader(TEST_HEADER));
-        assertEquals(FEDORA_TX_BASEURI, msg.getHeader(HEADER_FCTRPO_TX_BASEURI));
+        assertEquals(FEDORA_TX_BASEURI,
+                     msg.getHeader(HEADER_FCTRPO_TX_BASEURI));
     }
 
     @Test
@@ -187,10 +190,16 @@ public class FedoraDepositDriverTest
     @Override
     protected RouteBuilder createRouteBuilder() {
         driver = new FedoraDepositDriver();
-        driver.init(new HashMap<String, String>() {
+        driver.init(new FedoraConfig() {
 
-            {
-                put(PROP_FEDORA_BASEURI, FEDORA_BASEURI);
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return FedoraConfig.class;
+            }
+
+            @Override
+            public String fcrepo_baseuri() {
+                return FEDORA_BASEURI;
             }
         });
 
@@ -221,10 +230,9 @@ public class FedoraDepositDriverTest
         @Override
         public void configure() throws Exception {
             interceptSendToEndpoint("http4:fcrepo-host")
-                    .skipSendToOriginalEndpoint()
-                    .choice()
-                    .when(header(Exchange.HTTP_URI).isEqualTo(FEDORA_BASEURI
-                            + "/fcr:tx"))
+                    .skipSendToOriginalEndpoint().choice()
+                    .when(header(Exchange.HTTP_URI)
+                            .isEqualTo(FEDORA_BASEURI + "/fcr:tx"))
                     .process(e -> assertEquals("POST",
                                                e.getIn()
                                                        .getHeader(Exchange.HTTP_METHOD)))

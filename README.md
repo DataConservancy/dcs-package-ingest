@@ -21,12 +21,13 @@ This is a description of the package ingest service
 ## Usage ##
 ### Prerequisites ###
  - Oracle JDK 8
- - Apache Karaf
+ - Apache Karaf 4.0+
  
 ### Installation in Karaf ###
 See [Karaf install instructions](package-ingest-karaf/README.md).  
 
-
+### Configuration ###
+See [Karaf configuration instructions](package-ingest-karaf/README.md#Configuration)
 ## Development ##
 
 ### Integration testing ###
