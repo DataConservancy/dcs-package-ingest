@@ -43,11 +43,11 @@ import static org.dataconservancy.packaging.impl.UriUtility.resolveBagUri;
 @ObjectClassDefinition(name = "org.dataconservancy.packaging.impl.PackageFileAnalyzer", description = "Unpacks and analyzes package files for ingest")
 @interface PackageFileAnalyzerConfig {
     
-    @AttributeDefinition(description="Directory for temporary unpacking package contents as necessary")
+    @AttributeDefinition(description = "Directory for temporary unpacking package contents as necessary")
     String pkg_extract_dir() default "/tmp";
 }
 
-@Component(service = LdpPackageAnalyzer.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Component(service = LdpPackageAnalyzer.class, configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
 @Designate(ocd = PackageFileAnalyzerConfig.class)
 public class PackageFileAnalyzer
         implements LdpPackageAnalyzer<File> {
