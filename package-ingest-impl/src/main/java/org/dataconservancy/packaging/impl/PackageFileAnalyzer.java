@@ -44,7 +44,7 @@ import static org.dataconservancy.packaging.impl.UriUtility.resolveBagUri;
 @interface PackageFileAnalyzerConfig {
     
     @AttributeDefinition(description = "Directory for temporary unpacking package contents as necessary")
-    String pkg_extract_dir() default "/tmp";
+    String package_extract_dir() default "/tmp";
 }
 
 @Component(service = LdpPackageAnalyzer.class, configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
@@ -78,7 +78,7 @@ public class PackageFileAnalyzer
     
     @Activate
     public void init(PackageFileAnalyzerConfig config) {
-        extractDir = new File(config.pkg_extract_dir());
+        extractDir = new File(config.package_extract_dir());
         extractDir.mkdirs();
     }
 

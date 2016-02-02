@@ -10,7 +10,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <name>Package Ingest Integration</name>
+  <name>package-ingest-integration</name>
   <description>Integration Tests for the Package Ingest</description>
 
   <parent>
@@ -25,6 +25,10 @@
     <fedora.port>8080</fedora.port>
     <fedora.cxtPath>fcrepo</fedora.cxtPath>
     <pax-exam.version>4.8.0</pax-exam.version>
+    <package.extract.dir>${project.build.directory}/package/extract</package.extract.dir>
+    <package.deposit.dir>${project.build.directory}/package/deposit</package.deposit.dir>
+    <package.fail.dir>${project.build.directory}/package/fail</package.fail.dir>
+    <fedora.baseuri>http://localhost:${fedora.port}/${fedora.cxtPath}/rest</fedora.baseuri>
   </properties>
 
   <!-- Build ====================================================== -->
@@ -93,8 +97,11 @@
         </executions>
         <configuration>
           <systemPropertyVariables>
+            <package.deposit.dir>${package.deposit.dir}</package.deposit.dir>
+            <package.fail.dir>${package.fail.dir}</package.fail.dir>
+            <package.extract.dir>${package.extract.dir}</package.extract.dir>
             <pax.exam.karaf.version>${karaf.version}</pax.exam.karaf.version>
-            <fedora.baseURI>http://localhost:${fedora.port}/${fedora.cxtPath}/rest</fedora.baseURI>
+            <fedora.baseuri>${fedora.baseuri}</fedora.baseuri>
           </systemPropertyVariables>
         </configuration>
       </plugin>

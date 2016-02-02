@@ -198,7 +198,7 @@ public class FedoraDepositDriverTest
             }
 
             @Override
-            public String fcrepo_baseuri() {
+            public String fedora_baseuri() {
                 return FEDORA_BASEURI;
             }
         });

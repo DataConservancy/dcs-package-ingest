@@ -21,7 +21,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @interface FedoraConfig {
 
     @AttributeDefinition(description = "Fedora base URI.  Points to the 'root' container in Fedora")
-    String fcrepo_baseuri() default "http://localhost:8080/fedora/rest";
+    String fedora_baseuri() default "http://localhost:8080/fedora/rest";
 }
 
 @Component(service = DepositDriver.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
@@ -73,7 +73,7 @@ public class FedoraDepositDriver
                                        headerString(e, Exchange.HTTP_URI)
                                                .replace(headerString(e,
                                                                      HEADER_FCTRPO_TX_BASEURI),
-                                                        config.fcrepo_baseuri()));
+                                                        config.fedora_baseuri()));
                 });
 
         /*
@@ -82,9 +82,9 @@ public class FedoraDepositDriver
          * a transaction in Fedora.
          */
         from("direct:_doStartTransaction").id(ID_START_TRANSACTION)
-                .removeHeaders("*", config.fcrepo_baseuri())
+                .removeHeaders("*", config.fedora_baseuri())
                 .setHeader(Exchange.HTTP_URI,
-                           constant(config.fcrepo_baseuri() + "/fcr:tx"))
+                           constant(config.fedora_baseuri() + "/fcr:tx"))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .to("http4:fcrepo-host");
 
@@ -126,7 +126,7 @@ public class FedoraDepositDriver
         orig.getIn().setHeader(HEADER_FCTRPO_TX_BASEURI, txBase);
 
         orig.getIn().setHeader(Exchange.HTTP_URI,
-                               dest.replace(config.fcrepo_baseuri(), txBase));
+                               dest.replace(config.fedora_baseuri(), txBase));
         return orig;
     };
 

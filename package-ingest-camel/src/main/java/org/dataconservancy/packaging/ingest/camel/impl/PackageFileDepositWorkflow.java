@@ -1,6 +1,8 @@
 
 package org.dataconservancy.packaging.ingest.camel.impl;
 
+import java.io.File;
+
 import org.apache.camel.builder.RouteBuilder;
 
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
@@ -21,6 +23,9 @@ import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_TRA
 
 @ObjectClassDefinition(name = "org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow", description = "Package file deposit workflow.  Monitors a ilesystem location for package files, deposits them to a single location.")
 @interface PackageFileDepositWorkflowConfig {
+
+    @AttributeDefinition(description = "Attempt to create directories if not present")
+    boolean create_directories() default true;
 
     @AttributeDefinition(description = "Filesystem path to a directory that will be monitored for package files")
     String package_deposit_dir();
@@ -52,6 +57,11 @@ public class PackageFileDepositWorkflow
     @Activate
     private void init(PackageFileDepositWorkflowConfig config) {
         this.config = config;
+
+        if (config.create_directories()) {
+            new File(config.package_deposit_dir()).mkdirs();
+            new File(config.package_fail_dir()).mkdirs();
+        }
     }
 
     @Override
