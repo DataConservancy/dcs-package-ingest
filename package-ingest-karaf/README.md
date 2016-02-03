@@ -1,7 +1,7 @@
 
 ## Manual Install ##
 
-* (This step is required only before the release, since we won't have artifacts in the maven repository yet.) Go to the toplevel package-ingest/ and do `mvn clean install` so that the latest build is put into your local
+* (This first step is required only before the release, since we won't have artifacts in the maven repository yet.) Go to the toplevel package-ingest/ and do `mvn clean install` so that the latest build is put into your local
 maven repository
 * [Download](https://karaf.apache.org/index/community/download.html) and unzip apache karaf 4.0+ if you haven't done so
 * Launch apache karaf, `${karaf.home}/bin/karaf`
