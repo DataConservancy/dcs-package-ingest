@@ -32,5 +32,8 @@ maven repository
     * `org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications`
 * Create as many deposit workflow configurations as desired.  Each configuration can be used to specify a directory to watch for packages, as well as a Fedora container to deposit into.  To do this, click the `+` button next to `org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow` and fill in the fields to add a configuration.  You can add or remove as many as you wish.
 
+### Interaction Between the Two Methods ###
+Testing suggests the following behavior: When configuring via the Web Console, changes to configurations are saved in the appropriate bundle configuration deep in the in the `{karaf.home}/data/cache` directory. Cached configurations will be used upon subsequent starts, unless manually configured files are present in `${karaf.home}/bin/karaf` - in this case, the values defined in the `${karaf.home}/bin/karaf` files will be used.
+
 ## Verification ##
 To verify that services are running, do `scr:list` on the command line, or go to the web console `OSGi -> Components`: [http://localhost:8181/system/console/components](http://localhost:8181/system/console/components).  Make sure everything you configured has an `active` state.
