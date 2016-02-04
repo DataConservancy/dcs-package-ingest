@@ -124,8 +124,14 @@
 
     <testResources>
       <testResource>
-        <directory>src/test/resources</directory>
+        <directory>src/test/resources/cfg</directory>
         <filtering>true</filtering>
+        <targetPath>cfg</targetPath>
+      </testResource>
+      <testResource>
+        <directory>src/test/resources/packages</directory>
+        <filtering>false</filtering>
+        <targetPath>packages</targetPath>
       </testResource>
     </testResources>
   </build>

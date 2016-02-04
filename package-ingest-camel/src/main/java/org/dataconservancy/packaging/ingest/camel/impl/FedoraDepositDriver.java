@@ -13,16 +13,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
-import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-
-@ObjectClassDefinition(name = "org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver", description = "Transactional Fedora LDP Deposit Driver")
-@interface FedoraConfig {
-
-    @AttributeDefinition(description = "Fedora base URI.  Points to the 'root' container in Fedora")
-    String fedora_baseuri() default "http://localhost:8080/fedora/rest";
-}
 
 @Component(service = DepositDriver.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Designate(ocd = FedoraConfig.class)
@@ -125,8 +116,11 @@ public class FedoraDepositDriver
 
         orig.getIn().setHeader(HEADER_FCTRPO_TX_BASEURI, txBase);
 
-        orig.getIn().setHeader(Exchange.HTTP_URI,
+        if (dest != null) {
+            orig.getIn()
+                    .setHeader(Exchange.HTTP_URI,
                                dest.replace(config.fedora_baseuri(), txBase));
+        }
         return orig;
     };
 

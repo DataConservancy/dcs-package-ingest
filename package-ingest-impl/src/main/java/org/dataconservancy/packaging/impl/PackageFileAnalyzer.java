@@ -34,18 +34,9 @@ import org.dataconservancy.packaging.ingest.LdpResource;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
-import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 import static org.dataconservancy.packaging.impl.UriUtility.resolveBagUri;
-
-@ObjectClassDefinition(name = "org.dataconservancy.packaging.impl.PackageFileAnalyzer", description = "Unpacks and analyzes package files for ingest")
-@interface PackageFileAnalyzerConfig {
-    
-    @AttributeDefinition(description = "Directory for temporary unpacking package contents as necessary")
-    String package_extract_dir() default "/tmp";
-}
 
 @Component(service = LdpPackageAnalyzer.class, configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
 @Designate(ocd = PackageFileAnalyzerConfig.class)
@@ -119,7 +110,7 @@ public class PackageFileAnalyzer
             }
             //Read through the REM File to get the ldp concepts to populate the ldpresources
         } catch (IOException e) {
-            throw new RuntimeIOException("Failed to open the bag-info file for the package. " + e.getMessage());
+            throw new RuntimeIOException("Failed to open the bag-info file for the package. " + e.getMessage(), e);
         }
 
         //Should be only one container since we only support one root, if we have more than one it was added before it's parent so loop through the visited children and remove them here.

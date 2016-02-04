@@ -76,6 +76,7 @@ public class OpenPackageService {
         ArchiveEntry entry;
 
         while ((entry = ais.getNextEntry()) != null) {
+            
             File file = extract(dest_dir, entry, ais);
 
             String root = get_root_file_name(file);
@@ -109,6 +110,7 @@ public class OpenPackageService {
     // Extract entry in an archive and return relative file to extracted entry
     private File extract(File dest_dir, ArchiveEntry entry, ArchiveInputStream ais) throws IOException {
         String path = FilenameUtils.separatorsToSystem(entry.getName());
+        
 
         File file = new File(dest_dir, path);
 
@@ -122,7 +124,7 @@ public class OpenPackageService {
             try (OutputStream os = new FileOutputStream(file)) {
                 IOUtils.copyLarge(ais, os, 0, entry.getSize());
             } catch (IOException e) {
-                throw new IOException("Couldn't create " + file.toString() + ". Please make sure you have write access for the extract directory.");
+                throw new IOException("Couldn't create " + file.toString() + ". Please make sure you have write access for the extract directory.", e);
             }
         }
 
