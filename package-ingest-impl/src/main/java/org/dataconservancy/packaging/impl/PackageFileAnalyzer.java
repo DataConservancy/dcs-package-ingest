@@ -91,7 +91,7 @@ public class PackageFileAnalyzer
                     Model remModel = ModelFactory.createDefaultModel();
                     remModel.read(remPath.toUri().toString(), getJenaFormatString(remPath));
 
-                    ResIterator nodeIterator = remModel.listResourcesWithProperty(TYPE, LDP_CONTAINER);
+                    ResIterator nodeIterator = remModel.listResourcesWithProperty(TYPE, remModel.getResource(LDP_CONTAINER));
                     if (!nodeIterator.hasNext()) {
                         throw new RuntimeException("Couldn't find any LDP Containers in the package.");
                     } else {
@@ -117,6 +117,7 @@ public class PackageFileAnalyzer
         if (packageContainerResources.size() > 1) {
             visitedChildContainers.forEach(packageContainerResources::remove);
         }
+        
         return packageContainerResources.values();
     }
 
@@ -146,7 +147,7 @@ public class PackageFileAnalyzer
                         visitedContainerResources.add(childContainer.getURI());
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException("Resource map was invalid. " + e.getMessage());
+                    throw new RuntimeException("Resource map was invalid. ", e );
                 }
             }
         }
@@ -173,11 +174,11 @@ public class PackageFileAnalyzer
         if (fileResource.hasProperty(DESCRIBES_PROPERTY)) {
             RDFNode value = fileResource.getProperty(DESCRIBES_PROPERTY).getObject();
 
-            if (!value.isLiteral()) {
+            if (!value.isResource()) {
                 throw new RuntimeException("Unable to read binary content in the package.");
             }
 
-            URI binaryFileURI = new URI(value.asLiteral().getString());
+            URI binaryFileURI = new URI(value.asResource().getURI());
             binaryFileResource = new BasicLdpResource(binaryFileURI);
             binaryFileResource.setType(LdpResource.Type.NONRDFSOURCE);
             binaryFileResource.setDescription(fileDomainObjectResource);

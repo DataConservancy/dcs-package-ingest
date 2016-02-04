@@ -8,20 +8,20 @@
 
 <bag://test_pkg/data/obj/curl/log.txt.ttl>
         <http://www.iana.org/assignments/relation/describes>
-                "bag://test_pkg/data/bin/curl/log.txt" .
+                <bag://test_pkg/data/bin/curl/log.txt> .
 
 <bag://test_pkg/data/obj/curl/out.ttl>
-        a       "http://www.w3.org/ns/ldp#Container" .
+        a       <http://www.w3.org/ns/ldp#Container> .
 
 <bag://test_pkg/data/obj/curl/out.txt.ttl>
         <http://www.iana.org/assignments/relation/describes>
-                "bag://test_pkg/data/bin/curl/out.txt" .
+                <bag://test_pkg/data/bin/curl/out.txt> .
 
 <bag://test_pkg/data/obj/curl.ttl>
-        a       "http://www.w3.org/ns/ldp#Container" ;
+        a       <http://www.w3.org/ns/ldp#Container> ;
         <http://www.w3.org/ns/ldp#contains>
-                <bag://test_pkg/data/obj/curl/out.txt.ttl> , <bag://test_pkg/data/obj/curl/out.ttl> , <bag://test_pkg/data/obj/curl/log.txt.ttl> , <bag://test_pkg/data/obj/curl/LICENSE.ttl> .
+                <bag://test_pkg/data/bin/curl/out.txt> , <bag://test_pkg/data/obj/curl/out.ttl>,  <bag://test_pkg/data/bin/curl/log.txt> , <bag://test_pkg/data/bin/curl/LICENSE> .
 
 <bag://test_pkg/data/obj/curl/LICENSE.ttl>
         <http://www.iana.org/assignments/relation/describes>
-                "bag://test_pkg/data/bin/curl/LICENSE" .
+                <bag://test_pkg/data/bin/curl/LICENSE> .

@@ -23,6 +23,8 @@ public class PackageFileAnalyzerTest {
 
     private PackageFileAnalyzer underTest;
     private File testPackage;
+    
+    private static final String TURTLE_MEDIA_TYPE = "text/turtle";
 
     @Before
     public void setup() throws IOException {
@@ -44,7 +46,7 @@ public class PackageFileAnalyzerTest {
 
         LdpResource rootResource = packageResources.iterator().next();
         assertEquals(new URI("bag://test_pkg/data/obj/curl.ttl"), rootResource.getURI());
-
+        assertEquals(TURTLE_MEDIA_TYPE, rootResource.getMediaType());
         assertEquals(LdpResource.Type.CONTAINER, rootResource.getType());
         assertNotNull(rootResource.getBody());
         assertNull(rootResource.getDescription());
@@ -67,6 +69,7 @@ public class PackageFileAnalyzerTest {
             if (child.getURI().equals(new URI("bag://test_pkg/data/obj/curl/out.ttl"))) {
                 assertEquals(LdpResource.Type.CONTAINER, child.getType());
 
+                assertEquals(TURTLE_MEDIA_TYPE, child.getMediaType());
                 assertTrue(child.getChildren().isEmpty());
                 assertNotNull(child.getBody());
                 assertNull(child.getDescription());
@@ -91,7 +94,7 @@ public class PackageFileAnalyzerTest {
         for (LdpResource child : rootResource.getChildren()) {
             if (child.getURI().equals(new URI("bag://test_pkg/data/bin/curl/log.txt"))) {
                 assertEquals(LdpResource.Type.NONRDFSOURCE, child.getType());
-
+                assertEquals("text/plain", child.getMediaType());
                 assertTrue(child.getChildren().isEmpty());
                 assertNotNull(child.getBody());
                 assertNotNull(child.getDescription());
@@ -99,6 +102,7 @@ public class PackageFileAnalyzerTest {
 
                 assertEquals(LdpResource.Type.RDFSOURCE, childRdf.getType());
                 assertEquals(new URI("bag://test_pkg/data/obj/curl/log.txt.ttl"), childRdf.getURI());
+                assertEquals(TURTLE_MEDIA_TYPE, childRdf.getMediaType());
                 assertNotNull(childRdf.getBody());
 
                 assertTrue(child.getChildren().isEmpty());
