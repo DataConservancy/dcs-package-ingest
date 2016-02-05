@@ -90,7 +90,7 @@ public class PackageFileAnalyzerTest {
         LdpResource rootResource = packageResources.iterator().next();
         assertNotNull(rootResource);
 
-        boolean emptyCollectionChecked = false;
+        boolean fileChecked = false;
         for (LdpResource child : rootResource.getChildren()) {
             if (child.getURI().equals(new URI("bag://test_pkg/data/bin/curl/log.txt"))) {
                 assertEquals(LdpResource.Type.NONRDFSOURCE, child.getType());
@@ -107,10 +107,10 @@ public class PackageFileAnalyzerTest {
 
                 assertTrue(child.getChildren().isEmpty());
                 assertNull(childRdf.getDescription());
-                emptyCollectionChecked = true;
+                fileChecked = true;
             }
         }
 
-        assertTrue(emptyCollectionChecked);
+        assertTrue(fileChecked);
     }
 }

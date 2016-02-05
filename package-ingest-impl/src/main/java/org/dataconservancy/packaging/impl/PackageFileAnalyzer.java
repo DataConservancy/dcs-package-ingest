@@ -129,7 +129,7 @@ public class PackageFileAnalyzer
         resource.setType(LdpResource.Type.CONTAINER);
 
         Path resourcePath = UriUtility.resolveBagUri(extractDirectory, resourceBagUri);
-        resource.setMediaType(Files.probeContentType(resourcePath));
+        resource.setMediaType(getDomainObjectMimeType(resourcePath));
         resource.setBody(new FileInputStream(resourcePath.toFile()));
 
         if (ldpContainerResource.hasProperty(LDP_CONTAINS)) {
@@ -139,8 +139,8 @@ public class PackageFileAnalyzer
                 try {
                     Resource childResource = child.asResource();
                     //Handle a file
-                    if (!childResource.hasProperty(TYPE, LDP_CONTAINER)) {
-                        resource.addChild(populateFileResource(childResource, extractDirectory));
+                    if (!childResource.hasProperty(TYPE, model.getResource(LDP_CONTAINER))) {
+                        resource.addChild(populateFileResource(childResource, extractDirectory, model));
                     } else {
                         LdpResource childContainer = populateLdpContainerResource(model, childResource, visitedContainerResources, extractDirectory);
                         resource.addChild(childContainer);
@@ -157,37 +157,38 @@ public class PackageFileAnalyzer
 
     //Parses out file resource information to craft appropriate ldp resource objects.
     //This will return the non rdf resource which will have the rdf resource set as it's description
-    private LdpResource populateFileResource(Resource fileResource, Path extractDirectory)
+    private LdpResource populateFileResource(Resource fileResource, Path extractDirectory, Model model)
         throws URISyntaxException, IOException {
 
         //Handle the domain object first, then we'll get the binary content it describes.
-        URI fileDomainObjectURI = new URI(fileResource.getURI());
-        BasicLdpResource fileDomainObjectResource = new BasicLdpResource(fileDomainObjectURI);
-        fileDomainObjectResource.setType(LdpResource.Type.RDFSOURCE);
+        URI binaryFileURI = new URI(fileResource.getURI());
+        BasicLdpResource binaryFileResource = new BasicLdpResource(binaryFileURI);
+        binaryFileResource.setType(LdpResource.Type.NONRDFSOURCE);
 
-        Path resourcePath = UriUtility.resolveBagUri(extractDirectory, fileDomainObjectURI);
-        fileDomainObjectResource.setMediaType(Files.probeContentType(resourcePath));
-        fileDomainObjectResource.setBody(new FileInputStream(resourcePath.toFile()));
+        Path resourcePath = UriUtility.resolveBagUri(extractDirectory, binaryFileURI);
+        String mimeType = Files.probeContentType(resourcePath);
+        if (mimeType == null) {
+            mimeType = "application/octet-stream";
+        }
+        binaryFileResource.setMediaType(mimeType);
+        binaryFileResource.setBody(new FileInputStream(resourcePath.toFile()));
 
-        BasicLdpResource binaryFileResource = null;
+        BasicLdpResource domainObjectResource;
 
-        if (fileResource.hasProperty(DESCRIBES_PROPERTY)) {
-            RDFNode value = fileResource.getProperty(DESCRIBES_PROPERTY).getObject();
-
-            if (!value.isResource()) {
-                throw new RuntimeException("Unable to read binary content in the package.");
-            }
-
-            URI binaryFileURI = new URI(value.asResource().getURI());
-            binaryFileResource = new BasicLdpResource(binaryFileURI);
-            binaryFileResource.setType(LdpResource.Type.NONRDFSOURCE);
-            binaryFileResource.setDescription(fileDomainObjectResource);
-
-            Path binaryResourcePath = UriUtility.resolveBagUri(extractDirectory, binaryFileURI);
-            binaryFileResource.setMediaType(Files.probeContentType(binaryResourcePath));
-            binaryFileResource.setBody(new FileInputStream(binaryResourcePath.toFile()));
+        ResIterator nodeIterator = model.listResourcesWithProperty(DESCRIBES_PROPERTY, fileResource);
+        if (!nodeIterator.hasNext()) {
+            throw new RuntimeException("Could not find RDFSource for: " + binaryFileURI);
         } else {
-            //TODO: Is it an exceptional case if there is no binary content?
+            //There should be only one resource
+            Resource domainObject = nodeIterator.next();
+            URI domainObjectURI = new URI(domainObject.getURI());
+            domainObjectResource = new BasicLdpResource(domainObjectURI);
+            domainObjectResource.setType(LdpResource.Type.RDFSOURCE);
+            binaryFileResource.setDescription(domainObjectResource);
+
+            Path domainObjectResourcePath = UriUtility.resolveBagUri(extractDirectory, domainObjectURI);
+            domainObjectResource.setMediaType(getDomainObjectMimeType(domainObjectResourcePath));
+            domainObjectResource.setBody(new FileInputStream(domainObjectResourcePath.toFile()));
         }
 
         return binaryFileResource;
@@ -244,6 +245,19 @@ public class PackageFileAnalyzer
             return "RDF/XML";
         } else if (remFile.toString().toLowerCase().endsWith(".jsonld")) {
             return "JSON-LD";
+        }
+
+        return "";
+    }
+
+    //Java's probe content type won't give correct mime types for our domain object files so we'll do it manually.
+    private String getDomainObjectMimeType(Path remFile) {
+        if (remFile.toString().toLowerCase().endsWith(".ttl")) {
+            return "text/turtle";
+        } else if (remFile.toString().toLowerCase().endsWith(".rdf")) {
+            return "application/rdf+xml";
+        } else if (remFile.toString().toLowerCase().endsWith(".jsonld")) {
+            return "application/ld+json";
         }
 
         return "";
