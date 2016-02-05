@@ -57,6 +57,7 @@ public class PackageFileAnalyzer
 
     private OpenPackageService packageService;
     private File extractDir;
+    private File extractedPackageLocation;
 
     public PackageFileAnalyzer(OpenPackageService openPackageService, File extractDir) {
         this.packageService = openPackageService;
@@ -78,7 +79,7 @@ public class PackageFileAnalyzer
         Map<URI, LdpResource> packageContainerResources = new HashMap<>();
         List<URI> visitedChildContainers = new ArrayList<>();
         try {
-            File extractedPackageLocation = packageService.openPackage(extractDir, pkg);
+            extractedPackageLocation = packageService.openPackage(extractDir, pkg);
 
             //Read bag info file to get ore-rem file
             File bagInfoFile = new File(extractedPackageLocation, BAG_INFO_NAME);
@@ -261,5 +262,15 @@ public class PackageFileAnalyzer
         }
 
         return "";
+    }
+
+    @Override
+    public void cleanUpExtractionDirectory() {
+        try {
+            org.apache.commons.io.FileUtils.deleteDirectory(extractedPackageLocation);
+        } catch (IOException e) {
+            throw new RuntimeIOException("Unable to clean up extract directory.", e);
+        }
+
     }
 }
