@@ -111,7 +111,7 @@ public class PackageFileAnalyzer
             }
             //Read through the REM File to get the ldp concepts to populate the ldpresources
         } catch (IOException e) {
-            throw new RuntimeIOException("Failed to open the bag-info file for the package. " + e.getMessage(), e);
+            throw new RuntimeIOException("Failed to open that package to retrieve the bag-info file. " + e.getMessage(), e);
         }
 
         //Should be only one container since we only support one root, if we have more than one it was added before it's parent so loop through the visited children and remove them here.
