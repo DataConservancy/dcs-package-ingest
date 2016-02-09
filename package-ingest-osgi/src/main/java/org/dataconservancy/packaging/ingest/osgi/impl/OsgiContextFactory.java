@@ -7,7 +7,7 @@ import org.apache.camel.core.osgi.OsgiDefaultCamelContext;
 import org.apache.camel.core.osgi.utils.BundleDelegatingClassLoader;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.ExplicitCamelContextNameStrategy;
-
+import org.apache.camel.spi.Registry;
 import org.dataconservancy.packaging.ingest.camel.ContextFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -33,12 +33,12 @@ public class OsgiContextFactory
     }
 
     @Override
-    public CamelContext newContext(String id) {
+    public CamelContext newContext(String id, Registry registry) {
         CamelContext context;
 
         if (bundleContext != null) {
 
-            context = new OsgiDefaultCamelContext(bundleContext);
+            context = new OsgiDefaultCamelContext(bundleContext, registry);
             context.setApplicationContextClassLoader(new BundleDelegatingClassLoader(bundleContext
                     .getBundle()));
             Thread.currentThread()

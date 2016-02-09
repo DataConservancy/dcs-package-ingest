@@ -2,6 +2,7 @@
 package org.dataconservancy.packaging.ingest.camel;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.spi.Registry;
 
 /**
  * Produces new camel contexts
@@ -12,7 +13,11 @@ import org.apache.camel.CamelContext;
  */
 public interface ContextFactory {
 
-    public CamelContext newContext(String id);
+    public default CamelContext newContext(String id) {
+    	return newContext(id, null);
+    }
+    
+    public CamelContext newContext(String id, Registry registry);
 
     /**
      * Creates a new, empty CamelContext.
@@ -20,6 +25,6 @@ public interface ContextFactory {
      * @return A new CamelContext.
      */
     public default CamelContext newContext() {
-        return newContext(null);
+        return newContext(null, null);
     }
 }
