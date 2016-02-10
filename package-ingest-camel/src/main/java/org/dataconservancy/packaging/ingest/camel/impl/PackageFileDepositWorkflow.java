@@ -2,6 +2,7 @@
 package org.dataconservancy.packaging.ingest.camel.impl;
 
 import java.io.File;
+import java.io.FileInputStream;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
@@ -61,18 +62,40 @@ public class PackageFileDepositWorkflow
                 .setHeader(Exchange.HTTP_URI,
                            constant(config.deposit_location()))
                 .doTry().to(ROUTE_TRANSACTION_BEGIN)
+                .process(e -> System.out.println("Transaction has begun"))
                 /* .to(ROUTE_DEPOSIT_PROVENANCE) */
-                .to(ROUTE_DEPOSIT_RESOURCES).to(ROUTE_TRANSACTION_COMMIT)
-                .to(ROUTE_NOTIFICATION_SUCCESS).doCatch(Exception.class)
-                .to("direct:fail_copy_package").doTry()
+                .to(ROUTE_DEPOSIT_RESOURCES)
+                .process(e -> System.out
+                        .println("Resources have been deposited"))
+                .to(ROUTE_TRANSACTION_COMMIT).to(ROUTE_NOTIFICATION_SUCCESS)
+                .doCatch(Exception.class)
+                .process(e -> System.out.println("Exception caught!"))
+                .to("direct:fail_copy_package")
+                .process(e -> System.out.println("Wrote fail file")).doTry()
+                .process(e -> System.out.println("Rolling back..."))
                 .to(ROUTE_TRANSACTION_ROLLBACK).doCatch(Exception.class)
-                .end()
+                .process(e -> {
+                    System.err.println("Error during rollback!");
+
+                    e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
+                            .printStackTrace(System.err);
+                }).end()
+                .process(e -> System.out.println("Going to notification fail"))
                 .to(ROUTE_NOTIFICATION_FAIL).end();
 
         /* Copy package to failure directory */
-        from("direct:fail_copy_package").id("deposit-fail")
+        from("direct:fail_copy_package").id("deposit-fail").doTry()
+                .process(e -> e.getIn()
+                        .setBody(new FileInputStream(e.getIn()
+                                .getHeader(Exchange.FILE_PATH, String.class))))
                 .to(String.format(
                                   "file:%s?autoCreate=true&keepLastModified=true",
-                                  config.package_fail_dir()));
+                                  config.package_fail_dir()))
+                .doCatch(Exception.class)
+                .process(e -> e
+                        .getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
+                        .printStackTrace(System.err))
+                .throwException(new RuntimeException("Failed to copy fail file!"))
+                .end();
     }
 }
