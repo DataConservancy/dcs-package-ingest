@@ -74,6 +74,7 @@ public class FedoraDepositDriver
          */
         from("direct:_doStartTransaction").id(ID_START_TRANSACTION)
                 .removeHeaders("*", config.fedora_baseuri())
+                .setBody(constant(null))
                 .setHeader(Exchange.HTTP_URI,
                            constant(config.fedora_baseuri() + "/fcr:tx"))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
@@ -86,6 +87,7 @@ public class FedoraDepositDriver
          */
         from("direct:_doCommitTransaction").id(ID_COMMIT_TRANSACTION)
                 .removeHeaders("*", HEADER_FCTRPO_TX_BASEURI)
+                .setBody(constant(null))
                 .setHeader(Exchange.HTTP_URI,
                            simple(String.format(
                                                 "${in.header.%s}/fcr:tx/fcr:commit",
@@ -100,6 +102,7 @@ public class FedoraDepositDriver
          */
         from("direct:_doRollbackTransaction").id(ID_ROLLBACK_TRANSACTION)
                 .removeHeaders("*", HEADER_FCTRPO_TX_BASEURI)
+                .setBody(constant(null))
                 .setHeader(Exchange.HTTP_URI,
                            simple(String.format(
                                                 "${in.header.%s}/fcr:tx/fcr:rollback",
