@@ -80,7 +80,7 @@ public class FedoraDepositDriver
                 .to("http4:fcrepo-host");
 
         /*
-         * Actually does the work of committing a trancation in Fedora
+         * Actually does the work of committing a transaction in Fedora
          * via HTTP, sends a POST to the local transaction's
          * fcr:tx/fcr:commit endpoint.
          */

@@ -209,7 +209,7 @@ public class LdpDepositDriver
 
         /*
          * Deposit a resources that describes another resource (indicated in LDP
-         * by Link rel=describedby). This assumes that the LDP implementation
+         * by Link rel=described by). This assumes that the LDP implementation
          * automatically creates such a resource; we just follow the link
          * header, and add triples to it.
          */
