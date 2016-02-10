@@ -14,7 +14,7 @@ public class DefaultContextFactory
     public CamelContext newContext(String id, Registry registry) {
         CamelContext cxt = new DefaultCamelContext(registry);
 
-        if (id != null) {
+        if (id != null && !id.equals("")) {
             cxt.setNameStrategy(new ExplicitCamelContextNameStrategy(id));
         }
 

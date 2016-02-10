@@ -8,14 +8,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import java.lang.annotation.Annotation;
-
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -176,8 +178,7 @@ public class DepositIT {
 
     protected void wire() {
 
-        FedoraDepositDriver driver = new FedoraDepositDriver();
-        driver.init(new FedoraConfig() {
+        FedoraConfig fedoraConfig = new FedoraConfig() {
 
             @Override
             public Class<? extends Annotation> annotationType() {
@@ -188,65 +189,74 @@ public class DepositIT {
             public String fedora_baseuri() {
                 return FEDORA_BASEURI;
             }
-        });
+        };
+
+        PackageFileAnalyzerConfig analyzerConfig =
+                new PackageFileAnalyzerConfig() {
+
+                    @Override
+                    public Class<? extends Annotation> annotationType() {
+                        return PackageFileAnalyzerConfig.class;
+                    }
+
+                    @Override
+                    public String package_extract_dir() {
+                        return PACKAGE_EXTRACT_DIR;
+                    }
+                };
+
+        PackageFileDepositWorkflowConfig workflowConfig =
+                new PackageFileDepositWorkflowConfig() {
+
+                    @Override
+                    public Class<? extends Annotation> annotationType() {
+                        return PackageFileDepositWorkflowConfig.class;
+                    }
+
+                    @Override
+                    public int package_poll_interval_ms() {
+                        return 1000;
+                    }
+
+                    @Override
+                    public String package_fail_dir() {
+                        return PACKAGE_FAIL_DIR;
+                    }
+
+                    @Override
+                    public String package_deposit_dir() {
+                        return PACKAGE_DEPOSIT_DIR;
+                    }
+
+                    @Override
+                    public String deposit_location() {
+                        return FEDORA_BASEURI;
+                    }
+
+                    @Override
+                    public boolean create_directories() {
+                        return true;
+                    }
+                };
+
+        FedoraDepositDriver driver = new FedoraDepositDriver();
+        driver.init(fedoraConfig);
 
         PackageFileAnalyzer analyzer = new PackageFileAnalyzer();
-        analyzer.init(new PackageFileAnalyzerConfig() {
-
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return PackageFileAnalyzerConfig.class;
-            }
-
-            @Override
-            public String package_extract_dir() {
-                return PACKAGE_EXTRACT_DIR;
-            }
-        });
+        analyzer.init(analyzerConfig);
 
         driver.setPackageAnalyzer(analyzer);
 
         PackageFileDepositWorkflow rootDeposit =
                 new PackageFileDepositWorkflow();
 
-        rootDeposit.init(new PackageFileDepositWorkflowConfig() {
-
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return PackageFileDepositWorkflowConfig.class;
-            }
-
-            @Override
-            public int package_poll_interval_ms() {
-                return 1000;
-            }
-
-            @Override
-            public String package_fail_dir() {
-                return PACKAGE_FAIL_DIR;
-            }
-
-            @Override
-            public String package_deposit_dir() {
-                return PACKAGE_DEPOSIT_DIR;
-            }
-
-            @Override
-            public String deposit_location() {
-                return FEDORA_BASEURI;
-            }
-
-            @Override
-            public boolean create_directories() {
-                return true;
-            }
-        });
+        rootDeposit.init(workflowConfig);
 
         mgr = new CamelDepositManager();
         mgr.setContextFactory(new DefaultContextFactory());
-        mgr.setDepositDriver(driver);
-        mgr.setNotificationDriver(new NotificationProbe());
-        mgr.addDepositWorkflow(rootDeposit);
+        mgr.setDepositDriver(driver, asMap(fedoraConfig));
+        mgr.setNotificationDriver(new NotificationProbe(), new HashMap<>());
+        mgr.addDepositWorkflow(rootDeposit, asMap(workflowConfig));
 
         mgr.init();
     }
@@ -263,5 +273,19 @@ public class DepositIT {
             from(NotificationDriver.ROUTE_NOTIFICATION_FAIL)
                     .process(e -> fail.add(e.copy()));
         }
+    }
+
+    private Map<String, Object> asMap(Annotation config) {
+        Map<String, Object> props = new HashMap<>();
+        for (Method m : config.annotationType().getMethods()) {
+            try {
+                if (m.getParameterCount() == 0)
+                    props.put(m.getName().replace('_', '.'), m.invoke(config));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return props;
     }
 }
