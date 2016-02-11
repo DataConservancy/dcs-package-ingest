@@ -30,9 +30,11 @@ public class EmailNotifications
             /* Just a place holder */
             e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
                     .printStackTrace(System.err);
-        });
+        }).to("smtp://{{mail.host}}:{{mail.port}}?password={{mail.password}}&username={{mail.username}}");
+
         from(ROUTE_NOTIFICATION_SUCCESS).process(e -> {
-        });
+             //build message body here
+        }).to("smtp://{{mail.host}}:{{mail.port}}?password={{mail.password}}&username={{mail.username}}");
 
     }
 }
