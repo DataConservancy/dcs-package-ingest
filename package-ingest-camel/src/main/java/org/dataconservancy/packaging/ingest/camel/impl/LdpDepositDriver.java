@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import org.apache.camel.Exchange;
@@ -33,6 +34,12 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Reference;
 
+import static org.apache.http.HttpHeaders.LOCATION;
+import static org.apache.camel.Exchange.CONTENT_TYPE;
+import static org.apache.camel.Exchange.HTTP_URI;
+
+import static org.dataconservancy.packaging.ingest.LdpResource.Type.NONRDFSOURCE;
+import static org.dataconservancy.packaging.ingest.camel.Helpers.headerString;
 
 /**
  * Deposits package content into an LDP repository.
@@ -131,54 +138,49 @@ public class LdpDepositDriver
                 .stopOnException().enrich("direct:_deposit_ldpResource",
                                           (existing, deposited) -> {
                                               existing.getIn()
-                                                      .setHeader(HttpHeaders.LOCATION,
+                                                      .setHeader(LOCATION,
                                                                  deposited
                                                                          .getIn()
-                                                                         .getHeader(HttpHeaders.LOCATION));
+                                                                         .getHeader(LOCATION));
                                               return MERGE_URI_MAP
                                                       .aggregate(existing,
                                                                  deposited);
                                           })
                 .setHeader(HEADER_LDP_RESOURCES,
                            bodyAs(LdpResource.class).method("getChildren"))
-                .setHeader(Exchange.HTTP_URI, header(HttpHeaders.LOCATION))
+                .setHeader(HTTP_URI, header(LOCATION))
                 .to("direct:_deposit_iterate").end();
 
         /*
-         * Deposit an LDP resource, and map the location
+         * Deposit an LDP resource, and map the location. TODO: Digest/MD5
+         * verification?
          */
         from("direct:_deposit_ldpResource").id("ldp-deposit-resource")
                 .process(e -> {
                     LdpResource resource = e.getIn().getBody(LdpResource.class);
+                    e.getIn().setBody(resource.getBody());
 
                     e.getIn().setHeader(HEADER_RESOURCE_DESCRIPTION,
                                         resource.getDescription());
                     e.getIn().setHeader(HEADER_ORIG_URI,
                                         resource.getURI().toString());
-                    e.getIn().setBody(resource.getBody());
-                    e.getIn().setHeader(Exchange.CONTENT_TYPE,
-                                        resource.getMediaType());
+                    e.getIn().setHeader(CONTENT_TYPE, resource.getMediaType());
+                    e.getIn().setHeader("Slug", fileName(resource));
 
-                    String name =
-                            new File(resource.getURI().getPath()).getName();
-
-                    e.getIn().setHeader("Slug", name);
-                    e.getIn().setHeader("Content-Disposition",
-                                        "attachment; filename=" + name);
-
-                    /* TODO: digest/md5? */
+                    if (NONRDFSOURCE.equals(resource.getType()))
+                        e.getIn().setHeader("Content-Disposition",
+                                            "attachment; filename="
+                                                    + fileName(resource));
 
                     /*
                      * If Location is set, it's from when we deposited the
                      * parent. POST to it to create a child. Otherwise, use the
-                     * supplied Exchange.HTTP_URI.
+                     * supplied HTTP_URI.
                      */
-                    e.getIn().setHeader(Exchange.HTTP_URI,
-                                        e.getIn().getHeader("Location",
-                                                            e.getIn()
-                                                                    .getHeader(Exchange.HTTP_URI,
-                                                                               String.class),
-                                                            String.class));
+                    if (headerString(e, LOCATION) != null) {
+                        e.getIn().setHeader(HTTP_URI,
+                                            headerString(e, LOCATION));
+                    }
 
                 }).to("direct:_http_preserve_body").to("direct:_update_uri_map")
                 .choice().when(header(HEADER_RESOURCE_DESCRIPTION).isNotNull())
@@ -222,21 +224,21 @@ public class LdpDepositDriver
                             .getHeader("Link", String.class), "describedby");
                     uriMap(e).put(description.getURI().toString(),
                                   descriptionURI);
-                    e.getIn().setHeader(Exchange.CONTENT_TYPE,
+                    e.getIn().setHeader(CONTENT_TYPE,
                                         description.getMediaType());
-                    e.getIn().setHeader(Exchange.HTTP_URI, descriptionURI);
+                    e.getIn().setHeader(HTTP_URI, descriptionURI);
                     e.getIn().setBody(IOUtils
                             .toByteArray(description.getBody()));
                 }).to("direct:_merge_ldpResource");
 
         /*
          * Merge rdf in the body with the contents of the resource at
-         * Exchange.HTTP_URI
+         * HTTP_URI
          */
         from("direct:_merge_ldpResource").id("ldp-merge-resource")
                 .enrich("direct:_retrieveForUpdate", MERGE_RDF)
                 .setHeader(HttpHeaders.IF_MATCH, header(HttpHeaders.ETAG))
-                .setHeader(Exchange.CONTENT_TYPE, constant("text/turtle"))
+                .setHeader(CONTENT_TYPE, constant("text/turtle"))
                 .setHeader(Exchange.HTTP_METHOD, constant("PUT"))
                 .to("direct:_http_preserve_body");
 
@@ -253,8 +255,8 @@ public class LdpDepositDriver
         /* Strip all headers except for certain HTTP headers used in requests */
         from("direct:_sanitize_headers").id("lsp-sanitize-headers")
                 .removeHeaders("*",
-                               Exchange.HTTP_URI,
-                               Exchange.CONTENT_TYPE,
+                               HTTP_URI,
+                               CONTENT_TYPE,
                                Exchange.HTTP_METHOD,
                                HttpHeaders.ACCEPT,
                                HttpHeaders.AUTHORIZATION,
@@ -266,7 +268,7 @@ public class LdpDepositDriver
         /* Remap original URIs to ldp URIs */
         from("direct:_remap_uris").id("ldp-remap-uris").id(ID_DEPOSIT_REMAP)
                 .split(header(HEADER_URI_MAP).method("values"), ((o, n) -> o))
-                .stopOnException().setHeader(Exchange.HTTP_URI, body())
+                .stopOnException().setHeader(HTTP_URI, body())
                 .enrich("direct:_retrieveForUpdate", (orig, retrieved) -> {
                     retrieved.getIn()
                             .setHeader(HEADER_URI_MAP,
@@ -322,7 +324,7 @@ public class LdpDepositDriver
     /*
      * Merges the RDF of two bodies
      * Body: Serialized RDF
-     * Headers: Exchange.CONTENT_TYPE, Location
+     * Headers: CONTENT_TYPE, Location
      */
     static final AggregationStrategy MERGE_RDF = ((orig, newer) -> {
         Model model = ModelFactory.createDefaultModel();
@@ -342,7 +344,7 @@ public class LdpDepositDriver
 
     /* Serializes rdf from a model into a message body */
     static void writeRDFBody(Model model, Exchange e) {
-        e.getIn().setHeader(Exchange.CONTENT_TYPE, "text/turtle");
+        e.getIn().setHeader(CONTENT_TYPE, "text/turtle");
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         model.write(out, "TURTLE");
         e.getIn().setBody(out.toByteArray());
@@ -350,15 +352,13 @@ public class LdpDepositDriver
 
     /* Parses the body of the message in an exchange into rdf */
     static void parseRDFBody(StreamRDF sink, Exchange e) {
-
-        RDFDataMgr
-                .parse(sink,
-                       new TypedInputStream(e.getIn()
-                               .getBody(InputStream.class),
-                                            ContentType.create(e.getIn()
-                                                    .getHeader(Exchange.CONTENT_TYPE,
-                                                               String.class))),
-                       e.getIn().getHeader(HttpHeaders.LOCATION, String.class));
+        RDFDataMgr.parse(sink,
+                         new TypedInputStream(e.getIn()
+                                 .getBody(InputStream.class),
+                                              ContentType.create(e.getIn()
+                                                      .getHeader(CONTENT_TYPE,
+                                                                 String.class))),
+                         e.getIn().getHeader(LOCATION, String.class));
     }
 
     /*
@@ -375,5 +375,16 @@ public class LdpDepositDriver
         }
 
         return null;
+    }
+
+    private static String fileName(LdpResource resource) {
+
+        String name = new File(resource.getURI().getPath()).getName();
+
+        if (!NONRDFSOURCE.equals(resource.getType())) {
+            return name;
+        } else {
+            return FilenameUtils.removeExtension(name);
+        }
     }
 }

@@ -9,16 +9,25 @@ import java.io.OutputStream;
 
 import java.lang.annotation.Annotation;
 
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchService;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 import org.junit.After;
 import org.junit.Before;
@@ -26,20 +35,29 @@ import org.junit.Test;
 
 import org.dataconservancy.packaging.impl.PackageFileAnalyzer;
 import org.dataconservancy.packaging.impl.PackageFileAnalyzerConfig;
+import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.CamelDepositManager;
 import org.dataconservancy.packaging.ingest.camel.impl.DefaultContextFactory;
-import org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications;
 import org.dataconservancy.packaging.ingest.camel.impl.FedoraConfig;
 import org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow;
-import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
 import org.dataconservancy.packaging.ingest.camel.impl.config.PackageFileDepositWorkflowConfig;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
+import static org.dataconservancy.packaging.ingest.camel.DepositWorkflow.HEADER_PROVENANCE_LOCATION;
+import static org.dataconservancy.packaging.ingest.camel.DepositWorkflow.HEADER_RESOURCE_LOCATIONS;
+
+import static org.dataconservancy.packaging.ingest.camel.Helpers.headerString;
 
 public class DepositIT {
 
-    static WatchService svc;
+    List<Exchange> success = new ArrayList<>();
+
+    List<Exchange> fail = new ArrayList<>();
+
+    private CamelDepositManager mgr;
 
     static String PACKAGE_DEPOSIT_DIR = System
             .getProperty("package.deposit.dir",
@@ -56,20 +74,22 @@ public class DepositIT {
     static String FEDORA_BASEURI = System
             .getProperty("fedora.baseuri", "http://localhost:8080/fcrepo/rest");
 
-    public DepositIT() {
-        wire();
-    }
+    private final HttpClient client =
+            HttpClientBuilder.create().setMaxConnPerRoute(Integer.MAX_VALUE)
+                    .setMaxConnTotal(Integer.MAX_VALUE).build();
 
     @Before
     public void setUp() throws Exception {
-        svc = FileSystems.getDefault().newWatchService();
+        wire();
+        fail.clear();
+        success.clear();
+        FileUtils.cleanDirectory(new File(PACKAGE_DEPOSIT_DIR));
+        FileUtils.cleanDirectory(new File(PACKAGE_FAIL_DIR));
     }
 
     @After
-    public void cleanUp() throws Exception {
-        svc.close();
-        FileUtils.cleanDirectory(new File(PACKAGE_DEPOSIT_DIR));
-        FileUtils.cleanDirectory(new File(PACKAGE_FAIL_DIR));
+    public void tearDown() throws Exception {
+        mgr.shutDown();
     }
 
     /* Verifies that failed packages go into fail older */
@@ -79,7 +99,6 @@ public class DepositIT {
         Path failDir = Paths.get(PACKAGE_FAIL_DIR);
         File created =
                 copyResource("/packages/badPackage.zip", depositDir.toFile());
-        depositDir.register(svc, StandardWatchEventKinds.ENTRY_DELETE);
 
         long start = new Date().getTime();
 
@@ -94,16 +113,19 @@ public class DepositIT {
         /* Fail directory should now have one package in it */
         assertEquals(1, failDir.toFile().list().length);
 
+        assertEquals(0, success.size());
+        assertEquals(1, fail.size());
+
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void projectDepositTest() throws Exception {
 
-        Path dir = Paths.get(PACKAGE_DEPOSIT_DIR);
+        File dir = new File(PACKAGE_DEPOSIT_DIR);
 
-        File created = copyResource("/packages/project1.zip", dir.toFile());
+        File created = copyResource("/packages/project1.zip", dir);
         copyResource("/packages/project1.zip", new File("/tmp"));
-        dir.register(svc, StandardWatchEventKinds.ENTRY_DELETE);
 
         long start = new Date().getTime();
 
@@ -112,8 +134,33 @@ public class DepositIT {
         }
 
         /* Package directory should be empty now */
-        assertEquals(0, dir.toFile().list().length);
+        assertEquals(0, dir.list().length);
 
+        /* Nothing in failure dir */
+        assertEquals(0, new File(PACKAGE_FAIL_DIR).list().length);
+
+        assertEquals(0, fail.size());
+        assertEquals(1, success.size());
+
+        List<String> locations =
+                new ArrayList<String>(((Collection<String>) success.get(0)
+                        .getIn().getHeader(HEADER_RESOURCE_LOCATIONS,
+                                           Collection.class)));
+
+        assertEquals(1, locations.size());
+        assertNotEquals(headerString(success.get(0), Exchange.HTTP_URI),
+                        locations.get(0));
+
+        HttpGet get = new HttpGet(locations.get(0));
+        get.setHeader(HttpHeaders.ACCEPT, "text/turtle");
+
+        HttpResponse response = client.execute(get);
+
+        assertEquals(HttpStatus.SC_OK,
+                     response.getStatusLine().getStatusCode());
+        assertEquals("text/turtle",
+                     response.getFirstHeader(HttpHeaders.CONTENT_TYPE)
+                             .getValue());
     }
 
     private File copyResource(String path, File file) throws IOException {
@@ -159,20 +206,6 @@ public class DepositIT {
 
         driver.setPackageAnalyzer(analyzer);
 
-        EmailNotifications notifications = new EmailNotifications();
-        notifications.init(new EmailNotificationsConfig() {
-
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return EmailNotificationsConfig.class;
-            }
-
-            @Override
-            public String mail_to() {
-                return "nobody@example.org";
-            }
-        });
-
         PackageFileDepositWorkflow rootDeposit =
                 new PackageFileDepositWorkflow();
 
@@ -209,13 +242,26 @@ public class DepositIT {
             }
         });
 
-        CamelDepositManager mgr = new CamelDepositManager();
+        mgr = new CamelDepositManager();
         mgr.setContextFactory(new DefaultContextFactory());
         mgr.setDepositDriver(driver);
-        mgr.setNotificationDriver(notifications);
+        mgr.setNotificationDriver(new NotificationProbe());
         mgr.addDepositWorkflow(rootDeposit);
 
         mgr.init();
+    }
 
+    private class NotificationProbe
+            extends RouteBuilder
+            implements NotificationDriver {
+
+        @Override
+        public void configure() throws Exception {
+            from(NotificationDriver.ROUTE_NOTIFICATION_SUCCESS)
+                    .process(e -> success.add(e.copy()));
+
+            from(NotificationDriver.ROUTE_NOTIFICATION_FAIL)
+                    .process(e -> fail.add(e.copy()));
+        }
     }
 }
