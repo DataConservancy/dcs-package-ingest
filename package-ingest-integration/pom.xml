@@ -21,7 +21,7 @@
   <artifactId>package-ingest-integration</artifactId>
 
   <properties>
-    <fedora.version>4.4.0</fedora.version>
+    <fedora.version>4.5.0</fedora.version>
     <fedora.port>8080</fedora.port>
     <fedora.cxtPath>fcrepo</fedora.cxtPath>
     <pax-exam.version>4.8.0</pax-exam.version>
@@ -203,7 +203,7 @@
     <dependency>
       <groupId>org.fcrepo.camel</groupId>
       <artifactId>fcrepo-camel</artifactId>
-      <version>${fedora.version}</version>
+      <version>4.4.0</version>
       <scope>test</scope>
     </dependency>
 
