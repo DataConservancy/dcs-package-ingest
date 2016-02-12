@@ -2,12 +2,14 @@
 package org.dataconservancy.packaging.ingest.camel.impl;
 
 import java.io.File;
+import java.io.StringWriter;
 
 import java.net.URI;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,6 +28,9 @@ import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.http.HttpHeaders;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.DatasetGraphFactory;
+import org.apache.jena.update.UpdateAction;
 
 import org.junit.Test;
 
@@ -35,6 +40,7 @@ import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.HEADER_BINARY_URIS;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.HEADER_LDP_RESOURCES;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.HEADER_URI_MAP;
 import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.ID_DEPOSIT_ITERATE;
@@ -327,6 +333,8 @@ public class LdpDepositDriverTest
 
                                         {
                                             put(HEADER_URI_MAP, uriMap);
+                                            put(HEADER_BINARY_URIS,
+                                                new HashSet<>());
                                             put(TEST_HEADER, TEST_HEADER_VALUE);
                                         }
                                     });
@@ -348,7 +356,10 @@ public class LdpDepositDriverTest
 
         /* Make sure that they've actually been transformed */
         for (Exchange e : mockDeposit.getExchanges()) {
-            String body = e.getIn().getBody(String.class);
+
+            String body = patch(objectContentMap
+                    .get(e.getIn().getHeader(Exchange.HTTP_URI, String.class)),
+                                e.getIn().getBody(String.class));
 
             /* Assert that the body contains at least one of the real URIs */
             assertTrue(uriMap.values().stream()
@@ -363,10 +374,10 @@ public class LdpDepositDriverTest
              */
             assertEquals(e.getIn().getHeader(Exchange.HTTP_METHOD,
                                              String.class),
-                         "PUT");
+                         "PATCH");
             assertEquals(e.getIn().getHeader(Exchange.CONTENT_TYPE,
                                              String.class),
-                         "text/turtle");
+                         "application/sparql-update");
             assertEquals(ETAG, e.getIn().getHeader(HttpHeaders.IF_MATCH));
         }
     }
@@ -390,7 +401,7 @@ public class LdpDepositDriverTest
                 from("direct:testHierarchical")
                         .to("direct:_deposit_hierarchical").to("mock:out");
 
-                from("direct:testRemapUris").to("direct:_remap_uris")
+                from("direct:testRemapUris").to("direct:_do_update_uris")
                         .to("mock:out");
 
                 from("direct:fakeDeposit").process(e -> e.getIn()
@@ -439,16 +450,14 @@ public class LdpDepositDriverTest
                                                                    new HashMap<>(),
                                                                    "");
                         }
-                    }).when(header(Exchange.HTTP_METHOD).isEqualTo("PUT"))
+                    }).when(header(Exchange.HTTP_METHOD).isEqualTo("PATCH"))
                     .process(e -> {
                         String uri = e.getIn().getHeader(Exchange.HTTP_URI,
                                                          String.class);
                         assertNotNull(uri);
-                        httpBodies.put(uri, e.getIn().getBody(String.class));
-                        mediaTypes.put(uri,
-                                       e.getIn().getHeader(
-                                                           Exchange.CONTENT_TYPE,
-                                                           String.class));
+                        httpBodies.put(uri,
+                                       patch(httpBodies.get(uri),
+                                             e.getIn().getBody(String.class)));
 
                     }).when(header(Exchange.HTTP_METHOD).isEqualTo("POST"))
                     .process(e -> {
@@ -499,5 +508,18 @@ public class LdpDepositDriverTest
                                 + e.getIn().getHeader(Exchange.HTTP_METHOD));
                     });
         }
+    }
+
+    private static String patch(String body, String patch) {
+        Model model = ModelFactory.createDefaultModel();
+        model.read(IOUtils.toInputStream(body), "", "TURTLE");
+
+        DatasetGraph graph = DatasetGraphFactory.create(model.getGraph());
+        UpdateAction.parseExecute(patch, graph);
+
+        StringWriter writer = new StringWriter();
+        model.write(writer, "TURTLE");
+
+        return writer.toString();
     }
 }

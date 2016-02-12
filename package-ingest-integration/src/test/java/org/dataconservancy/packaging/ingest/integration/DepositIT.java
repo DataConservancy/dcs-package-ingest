@@ -105,7 +105,7 @@ public class DepositIT {
         long start = new Date().getTime();
 
         /* Wait for the package file to disappear from the deposit dir */
-        while (created.exists() && new Date().getTime() - start < 3000) {
+        while (created.exists() && new Date().getTime() - start < 30000) {
             Thread.sleep(1000);
         }
 
@@ -127,11 +127,10 @@ public class DepositIT {
         File dir = new File(PACKAGE_DEPOSIT_DIR);
 
         File created = copyResource("/packages/project1.zip", dir);
-        copyResource("/packages/project1.zip", new File("/tmp"));
 
         long start = new Date().getTime();
 
-        while (created.exists() && new Date().getTime() - start < 10000) {
+        while (created.exists() && new Date().getTime() - start < 30000) {
             Thread.sleep(1000);
         }
 
@@ -163,6 +162,34 @@ public class DepositIT {
         assertEquals("text/turtle",
                      response.getFirstHeader(HttpHeaders.CONTENT_TYPE)
                              .getValue());
+    }
+
+    @Test
+    public void depositFullPackageTest() throws Exception {
+        File dir = new File(PACKAGE_DEPOSIT_DIR);
+
+        File created = copyResource("/packages/test-package.zip", dir);
+
+        long start = new Date().getTime();
+
+        while (created.exists() && new Date().getTime() - start < 30000) {
+            Thread.sleep(1000);
+        }
+
+        if (fail.size() > 0) {
+            fail.get(0).getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
+                    .printStackTrace(System.out);
+        }
+
+        assertEquals(0, fail.size());
+        assertEquals(1, success.size());
+
+        @SuppressWarnings("unchecked")
+        List<String> locations =
+                new ArrayList<String>(((Collection<String>) success.get(0)
+                        .getIn().getHeader(HEADER_RESOURCE_LOCATIONS,
+                                           Collection.class)));
+        assertEquals(1, locations.size());
     }
 
     private File copyResource(String path, File file) throws IOException {

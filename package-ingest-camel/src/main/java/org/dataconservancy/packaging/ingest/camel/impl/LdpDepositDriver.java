@@ -1,27 +1,25 @@
 
 package org.dataconservancy.packaging.ingest.camel.impl;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.http.HttpHeaders;
-import org.apache.jena.atlas.web.ContentType;
-import org.apache.jena.atlas.web.TypedInputStream;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.system.StreamRDF;
 import org.apache.jena.riot.system.StreamRDFLib;
 import org.apache.jena.util.ResourceUtils;
@@ -40,6 +38,8 @@ import static org.apache.camel.Exchange.HTTP_URI;
 
 import static org.dataconservancy.packaging.ingest.LdpResource.Type.NONRDFSOURCE;
 import static org.dataconservancy.packaging.ingest.camel.Helpers.headerString;
+import static org.dataconservancy.packaging.ingest.camel.impl.RdfUtil.parseRDFBody;
+import static org.dataconservancy.packaging.ingest.camel.impl.RdfUtil.writeRDFBody;
 
 /**
  * Deposits package content into an LDP repository.
@@ -60,7 +60,11 @@ public class LdpDepositDriver
 
     public static final String HEADER_URI_MAP = "deposit.ldp.uri_map";
 
+    public static final String HEADER_BINARY_URIS = "deposit.ldp.binary.uris";
+
     public static final String HEADER_ORIG_URI = "deposit.ldp.uri.orig";
+
+    public static final String HEADER_RESOURCE = "deposit.ldp.resource";
 
     public static final String HEADER_RESOURCE_DESCRIPTION =
             "deposit.ldp.resource_description";
@@ -115,11 +119,12 @@ public class LdpDepositDriver
                                            .getBody(File.class))))
                 .split(header(HEADER_LDP_RESOURCES), MERGE_URI_MAP)
                 .stopOnException().to("direct:_deposit_hierarchical").end()
-                .enrich("direct:_remap_uris", ((orig, updated) -> orig));
+                .enrich("direct:_do_update_uris", ((orig, updated) -> orig));
 
         /* Initial setup for a series of subsequent LDP deposits */
         from("direct:_setup_for_deposit").id("ldp-deposit-setup")
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
+                .setHeader(HEADER_BINARY_URIS, constant(new HashSet<>()))
                 .setHeader(HEADER_URI_MAP, constant(new HashMap<>()));
 
         /*
@@ -160,6 +165,7 @@ public class LdpDepositDriver
                     LdpResource resource = e.getIn().getBody(LdpResource.class);
                     e.getIn().setBody(resource.getBody());
 
+                    e.getIn().setHeader(HEADER_RESOURCE, resource);
                     e.getIn().setHeader(HEADER_RESOURCE_DESCRIPTION,
                                         resource.getDescription());
                     e.getIn().setHeader(HEADER_ORIG_URI,
@@ -182,8 +188,15 @@ public class LdpDepositDriver
                                             headerString(e, LOCATION));
                     }
 
-                }).to("direct:_http_preserve_body").to("direct:_update_uri_map")
-                .choice().when(header(HEADER_RESOURCE_DESCRIPTION).isNotNull())
+                }).to("direct:_http_preserve_body").process(UPDATE_URI_MAP)
+                .process(e -> {
+                    LdpResource resource = e.getIn()
+                            .getHeader(HEADER_RESOURCE, LdpResource.class);
+                    if (NONRDFSOURCE.equals(resource.getType())) e.getIn()
+                            .getHeader(HEADER_BINARY_URIS, Collection.class)
+                            .add(headerString(e, HttpHeaders.LOCATION));
+                }).choice()
+                .when(header(HEADER_RESOURCE_DESCRIPTION).isNotNull())
                 .enrich("direct:_deposit_resource_description", MERGE_URI_MAP)
                 .end();
 
@@ -202,12 +215,6 @@ public class LdpDepositDriver
         /* Sanitize headers and perform an HTTP operation */
         from("direct:_do_http_op").id(ID_HTTP_OPERATION)
                 .to("direct:_sanitize_headers").to("http4:ldp-host");
-
-        /* Updates the URI map based on Location header */
-        from("direct:_update_uri_map").id("ldp-update-uri-map")
-                .process(e -> uriMap(e)
-                        .put(e.getIn().getHeader(HEADER_ORIG_URI, String.class),
-                             e.getIn().getHeader("Location", String.class)));
 
         /*
          * Deposit a resources that describes another resource (indicated in LDP
@@ -229,18 +236,9 @@ public class LdpDepositDriver
                     e.getIn().setHeader(HTTP_URI, descriptionURI);
                     e.getIn().setBody(IOUtils
                             .toByteArray(description.getBody()));
-                }).to("direct:_merge_ldpResource");
-
-        /*
-         * Merge rdf in the body with the contents of the resource at
-         * HTTP_URI
-         */
-        from("direct:_merge_ldpResource").id("ldp-merge-resource")
-                .enrich("direct:_retrieveForUpdate", MERGE_RDF)
+                }).process(REMAP_URIS)
                 .setHeader(HttpHeaders.IF_MATCH, header(HttpHeaders.ETAG))
-                .setHeader(CONTENT_TYPE, constant("text/turtle"))
-                .setHeader(Exchange.HTTP_METHOD, constant("PUT"))
-                .to("direct:_http_preserve_body");
+                .process(SparqlPatch.ADD).to("direct:_http_preserve_body");
 
         /* Retrieve the current turtle representation of an object */
         from("direct:_retrieveForUpdate").id("ldp-retrieve-for-update")
@@ -266,38 +264,22 @@ public class LdpDepositDriver
                                "Slug");
 
         /* Remap original URIs to ldp URIs */
-        from("direct:_remap_uris").id("ldp-remap-uris").id(ID_DEPOSIT_REMAP)
+        from("direct:_do_update_uris").id("ldp-do-update-uris")
+                .id(ID_DEPOSIT_REMAP)
                 .split(header(HEADER_URI_MAP).method("values"), ((o, n) -> o))
-                .stopOnException().setHeader(HTTP_URI, body())
+                .stopOnException().setHeader(HTTP_URI, body()).choice()
+                .when(e -> !e.getIn()
+                        .getHeader(HEADER_BINARY_URIS, Collection.class)
+                        .contains(headerString(e, HTTP_URI)))
                 .enrich("direct:_retrieveForUpdate", (orig, retrieved) -> {
                     retrieved.getIn()
                             .setHeader(HEADER_URI_MAP,
                                        orig.getIn().getHeader(HEADER_URI_MAP));
                     return retrieved;
-                }).process(e -> {
-                    Map<String, String> uriMap = uriMap(e);
-                    Model model = ModelFactory.createDefaultModel();
-                    StreamRDF sink = StreamRDFLib.graph(model.getGraph());
-
-                    parseRDFBody(sink, e);
-
-                    model.listSubjects()
-                            .andThen(model.listObjects()
-                                    .filterKeep(RDFNode::isURIResource)
-                                    .mapWith(RDFNode::asResource))
-                            .filterKeep(r -> uriMap.containsKey(r.toString()))
-                            .forEachRemaining(r -> {
-                        e.getIn().setHeader("updated", true);
-                        ResourceUtils.renameResource(r,
-                                                     uriMap.get(r.toString()));
-                    });
-
-                    writeRDFBody(model, e);
-
-                }).choice().when(header("updated"))
-                .setHeader(Exchange.HTTP_METHOD, constant("PUT"))
+                }).process(REMAP_URIS).choice().when(header("updated"))
+                .enrich("direct:_retrieveForUpdate", SparqlPatch.MERGE)
                 .setHeader(HttpHeaders.IF_MATCH, header(HttpHeaders.ETAG))
-                .to("direct:_do_http_op").end().end();
+                .to("direct:_do_http_op").end().end().end();
 
     }
 
@@ -321,44 +303,48 @@ public class LdpDepositDriver
         return orig;
     });
 
+    static final Processor REMAP_URIS = (e -> {
+        Map<String, String> uriMap = uriMap(e);
+        Model model = ModelFactory.createDefaultModel();
+        StreamRDF sink = StreamRDFLib.graph(model.getGraph());
+
+        parseRDFBody(sink, e);
+
+        model.listSubjects()
+                .andThen(model.listObjects().filterKeep(RDFNode::isURIResource)
+                        .mapWith(RDFNode::asResource))
+                .filterKeep(r -> uriMap.containsKey(r.toString()))
+                .forEachRemaining(r -> {
+            e.getIn().setHeader("updated", true);
+            ResourceUtils.renameResource(r, uriMap.get(r.toString()));
+        });
+
+        writeRDFBody(model, e);
+    });
+
+    static final Processor UPDATE_URI_MAP =
+            (e -> uriMap(e).put(headerString(e, HEADER_ORIG_URI),
+                                headerString(e, HttpHeaders.LOCATION)));
+
     /*
      * Merges the RDF of two bodies
      * Body: Serialized RDF
      * Headers: CONTENT_TYPE, Location
      */
-    static final AggregationStrategy MERGE_RDF = ((orig, newer) -> {
-        Model model = ModelFactory.createDefaultModel();
-        StreamRDF sink = StreamRDFLib.graph(model.getGraph());
+    //static final AggregationStrategy MERGE_RDF = ((orig, newer) -> {
+    //    Model model = ModelFactory.createDefaultModel();
+    //    StreamRDF sink = StreamRDFLib.graph(model.getGraph());
 
-        parseRDFBody(sink, orig);
-        parseRDFBody(sink, newer);
-        writeRDFBody(model, orig);
+    //  parseRDFBody(sink, orig);
+    //  parseRDFBody(sink, newer);
+    //  writeRDFBody(model, orig);
 
-        return orig;
-    });
+    //  return orig;
+    //});
 
     /* Retrieve the uri map of a message */
     static Map<String, String> uriMap(Exchange e) {
         return e.getIn().getHeader(HEADER_URI_MAP, Map.class);
-    }
-
-    /* Serializes rdf from a model into a message body */
-    static void writeRDFBody(Model model, Exchange e) {
-        e.getIn().setHeader(CONTENT_TYPE, "text/turtle");
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        model.write(out, "TURTLE");
-        e.getIn().setBody(out.toByteArray());
-    }
-
-    /* Parses the body of the message in an exchange into rdf */
-    static void parseRDFBody(StreamRDF sink, Exchange e) {
-        RDFDataMgr.parse(sink,
-                         new TypedInputStream(e.getIn()
-                                 .getBody(InputStream.class),
-                                              ContentType.create(e.getIn()
-                                                      .getHeader(CONTENT_TYPE,
-                                                                 String.class))),
-                         e.getIn().getHeader(LOCATION, String.class));
     }
 
     /*
@@ -381,7 +367,7 @@ public class LdpDepositDriver
 
         String name = new File(resource.getURI().getPath()).getName();
 
-        if (!NONRDFSOURCE.equals(resource.getType())) {
+        if (NONRDFSOURCE.equals(resource.getType())) {
             return name;
         } else {
             return FilenameUtils.removeExtension(name);

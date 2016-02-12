@@ -77,30 +77,11 @@ public class PackageFileDepositWorkflow
                            constant(config.deposit_location()))
 
                 .doTry().to(ROUTE_TRANSACTION_BEGIN)
-                .process(e -> System.out.println("Transaction has begun"))
                 /* .to(ROUTE_DEPOSIT_PROVENANCE) */
-                .to(ROUTE_DEPOSIT_RESOURCES)
-                .process(e -> System.out
-                        .println("Resources have been deposited"))
-                .to(ROUTE_TRANSACTION_COMMIT)
-                .process(e -> System.out
-                        .println("Resources have been committed"))
-                .doCatch(Exception.class)
-                .process(e -> System.out.println("Exception caught!"))
-                .to("direct:fail_copy_package")
-                .process(e -> System.out.println("Wrote fail file")).doTry()
-                .process(e -> System.out.println("Rolling back..."))
-                .to(ROUTE_TRANSACTION_ROLLBACK).doCatch(Exception.class)
-                .process(e -> {
-                    System.err.println("Error during rollback!");
-
-                    e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
-                            .printStackTrace(System.err);
-                }).end()
-                .process(e -> System.out.println("Going to notification fail"))
-                .to(ROUTE_NOTIFICATION_FAIL).end().stop().end()
-                .process(e -> System.out.println("Notifying of success"))
-                .doTry()
+                .to(ROUTE_DEPOSIT_RESOURCES).to(ROUTE_TRANSACTION_COMMIT)
+                .doCatch(Exception.class).to("direct:fail_copy_package").doTry()
+                .to(ROUTE_TRANSACTION_ROLLBACK).doCatch(Exception.class).end()
+                .to(ROUTE_NOTIFICATION_FAIL).end().stop().end().doTry()
                 .enrich("direct:_canonicalize_resources", (orig, updated) -> {
                     orig.getIn()
                             .setHeader(HEADER_RESOURCE_LOCATIONS,
@@ -108,12 +89,7 @@ public class PackageFileDepositWorkflow
                                                .getHeader(HEADER_RESOURCE_LOCATIONS));
                     return orig;
                 }).to(ROUTE_NOTIFICATION_SUCCESS).doCatch(Exception.class)
-                .process(e -> {
-                    System.err.println("Error during success notify!");
-
-                    e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
-                            .printStackTrace(System.err);
-                }).end();
+                .end();
 
         /* Canonicalize */
         from("direct:_canonicalize_resources")
