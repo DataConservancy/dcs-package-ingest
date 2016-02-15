@@ -1,7 +1,11 @@
+
 package org.dataconservancy.packaging.ingest.camel.impl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+
+import org.apache.commons.io.IOUtils;
 
 import org.apache.camel.Exchange;
 import org.apache.jena.atlas.web.ContentType;
@@ -14,6 +18,7 @@ import static org.apache.camel.Exchange.CONTENT_TYPE;
 import static org.apache.http.HttpHeaders.LOCATION;
 
 public class RdfUtil {
+
     /* Serializes rdf from a model into a message body */
     static void writeRDFBody(Model model, Exchange e) {
         e.getIn().setHeader(CONTENT_TYPE, "text/turtle");
@@ -24,12 +29,22 @@ public class RdfUtil {
 
     /* Parses the body of the message in an exchange into rdf */
     static void parseRDFBody(StreamRDF sink, Exchange e) {
-        RDFDataMgr.parse(sink,
-                         new TypedInputStream(e.getIn()
-                                 .getBody(InputStream.class),
-                                              ContentType.create(e.getIn()
-                                                      .getHeader(CONTENT_TYPE,
-                                                                 String.class))),
-                         e.getIn().getHeader(LOCATION, String.class));
+        
+        String body = "";
+
+        try {
+            body =
+                    IOUtils.toString(e.getIn().getBody(InputStream.class));
+
+            RDFDataMgr.parse(sink,
+                             new TypedInputStream(IOUtils.toInputStream(body),
+                                                  ContentType.create(e.getIn()
+                                                          .getHeader(CONTENT_TYPE,
+                                                                     String.class))),
+                             e.getIn().getHeader(LOCATION, String.class));
+        } catch (Exception x) {
+            System.err.println(body);
+            throw new RuntimeException(x);
+        }
     }
 }

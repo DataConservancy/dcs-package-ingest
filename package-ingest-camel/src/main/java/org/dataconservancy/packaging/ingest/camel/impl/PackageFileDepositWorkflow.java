@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.http.HttpHeaders;
 
 import org.dataconservancy.packaging.ingest.LdpResource;
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
@@ -76,10 +77,15 @@ public class PackageFileDepositWorkflow
                 .setHeader(Exchange.HTTP_URI,
                            constant(config.deposit_location()))
 
-                .doTry().to(ROUTE_TRANSACTION_BEGIN)
-                /* .to(ROUTE_DEPOSIT_PROVENANCE) */
-                .to(ROUTE_DEPOSIT_RESOURCES).to(ROUTE_TRANSACTION_COMMIT)
-                .doCatch(Exception.class).to("direct:fail_copy_package").doTry()
+                .doTry().to(ROUTE_TRANSACTION_BEGIN).to(ROUTE_DEPOSIT_RESOURCES)
+                .enrich("direct:_deposit_provenance", (orig, prov) -> {
+                    orig.getIn()
+                            .setHeader(HEADER_PROVENANCE_LOCATION,
+                                       headerString(prov,
+                                                    HEADER_PROVENANCE_LOCATION));
+                    return orig;
+                }).to(ROUTE_TRANSACTION_COMMIT).doCatch(Exception.class)
+                .to("direct:fail_copy_package").doTry()
                 .to(ROUTE_TRANSACTION_ROLLBACK).doCatch(Exception.class).end()
                 .to(ROUTE_NOTIFICATION_FAIL).end().stop().end().doTry()
                 .enrich("direct:_canonicalize_resources", (orig, updated) -> {
@@ -90,6 +96,12 @@ public class PackageFileDepositWorkflow
                     return orig;
                 }).to(ROUTE_NOTIFICATION_SUCCESS).doCatch(Exception.class)
                 .end();
+
+        from("direct:_deposit_provenance").to(ROUTE_DEPOSIT_PROVENANCE)
+                .setHeader(Exchange.HTTP_URI, header(HttpHeaders.LOCATION))
+                .to(ROUTE_TRANSACTION_CANONICALIZE)
+                .setHeader(HEADER_PROVENANCE_LOCATION,
+                           header(Exchange.HTTP_URI));
 
         /* Canonicalize */
         from("direct:_canonicalize_resources")

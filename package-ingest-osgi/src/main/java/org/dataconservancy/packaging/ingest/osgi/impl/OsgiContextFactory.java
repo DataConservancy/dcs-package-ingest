@@ -52,7 +52,7 @@ public class OsgiContextFactory
             context.getManagementStrategy().addEventNotifier(publisher);
         }
 
-        if (id != null) {
+        if (id != null && id != "") {
             context.setNameStrategy(new ExplicitCamelContextNameStrategy(id));
         }
 

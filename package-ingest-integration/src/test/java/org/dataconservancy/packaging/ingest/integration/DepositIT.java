@@ -37,6 +37,7 @@ import org.junit.Test;
 
 import org.dataconservancy.packaging.impl.PackageFileAnalyzer;
 import org.dataconservancy.packaging.impl.PackageFileAnalyzerConfig;
+import org.dataconservancy.packaging.impl.PackageFileProvenanceGenerator;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.CamelDepositManager;
 import org.dataconservancy.packaging.ingest.camel.impl.DefaultContextFactory;
@@ -162,6 +163,22 @@ public class DepositIT {
         assertEquals("text/turtle",
                      response.getFirstHeader(HttpHeaders.CONTENT_TYPE)
                              .getValue());
+
+        /* provenance */
+        String provenanceUri = success.get(0).getIn()
+                .getHeader(HEADER_PROVENANCE_LOCATION, String.class);
+        assertNotEquals(headerString(success.get(0), Exchange.HTTP_URI),
+                        provenanceUri);
+
+        get = new HttpGet(provenanceUri);
+        get.setHeader(HttpHeaders.ACCEPT, "text/turtle");
+        response = client.execute(get);
+
+        assertEquals(HttpStatus.SC_OK,
+                     response.getStatusLine().getStatusCode());
+        assertEquals("text/turtle",
+                     response.getFirstHeader(HttpHeaders.CONTENT_TYPE)
+                             .getValue());
     }
 
     @Test
@@ -273,6 +290,7 @@ public class DepositIT {
         analyzer.init(analyzerConfig);
 
         driver.setPackageAnalyzer(analyzer);
+        driver.setPackageProvenanceGenerator(new PackageFileProvenanceGenerator());
 
         PackageFileDepositWorkflow rootDeposit =
                 new PackageFileDepositWorkflow();

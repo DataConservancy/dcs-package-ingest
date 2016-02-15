@@ -25,6 +25,7 @@ import org.apache.jena.riot.system.StreamRDFLib;
 import org.apache.jena.util.ResourceUtils;
 
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
+import org.dataconservancy.packaging.ingest.LdpPackageProvenanceGenerator;
 import org.dataconservancy.packaging.ingest.LdpResource;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.osgi.service.component.annotations.Activate;
@@ -40,6 +41,8 @@ import static org.dataconservancy.packaging.ingest.LdpResource.Type.NONRDFSOURCE
 import static org.dataconservancy.packaging.ingest.camel.Helpers.headerString;
 import static org.dataconservancy.packaging.ingest.camel.impl.RdfUtil.parseRDFBody;
 import static org.dataconservancy.packaging.ingest.camel.impl.RdfUtil.writeRDFBody;
+
+import static org.dataconservancy.packaging.ingest.camel.Helpers.expression;
 
 /**
  * Deposits package content into an LDP repository.
@@ -77,6 +80,8 @@ public class LdpDepositDriver
 
     private LdpPackageAnalyzer<File> analyzer;
 
+    LdpPackageProvenanceGenerator<File> provGen;
+
     protected void configureTransactions() {
         /*
          * Do nothing. It would be nice to implement manual transactions in the
@@ -99,6 +104,11 @@ public class LdpDepositDriver
     @Reference
     public void setPackageAnalyzer(LdpPackageAnalyzer<File> analyzer) {
         this.analyzer = analyzer;
+    }
+
+    @Reference
+    public void setPackageProvenanceGenerator(LdpPackageProvenanceGenerator<File> gen) {
+        this.provGen = gen;
     }
 
     @Override
@@ -126,6 +136,19 @@ public class LdpDepositDriver
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .setHeader(HEADER_BINARY_URIS, constant(new HashSet<>()))
                 .setHeader(HEADER_URI_MAP, constant(new HashMap<>()));
+
+        from(ROUTE_DEPOSIT_PROVENANCE)
+                .setBody(expression(e -> provGen.generatePackageProvenance(
+                                                                           new File(headerString(e,
+                                                                                                 Exchange.FILE_PATH)),
+                                                                           e.getIn()
+                                                                                   .getHeader(HEADER_URI_MAP,
+                                                                                              Map.class))))
+                .to("direct:_deposit_ldpResource")
+                .process(e -> e.getIn().setHeader(LOCATION,
+                                                  getLinkRel(headerString(e,
+                                                                          "Link"),
+                                                             "describedby")));
 
         /*
          * Recurse through the nodes of the tree.

@@ -1,5 +1,7 @@
 package org.dataconservancy.packaging.impl;
 
+import org.apache.commons.io.IOUtils;
+
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -9,6 +11,8 @@ import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.riot.system.PrefixMapFactory;
 import org.dataconservancy.packaging.ingest.LdpPackageProvenanceGenerator;
 import org.dataconservancy.packaging.ingest.LdpResource;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,6 +26,7 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
+@Component(configurationPolicy = ConfigurationPolicy.IGNORE, immediate = true)
 public class PackageFileProvenanceGenerator implements LdpPackageProvenanceGenerator<File> {
     @Override
     public LdpResource generatePackageProvenance(File pkg, Map<String, String> uriMap) {
@@ -74,7 +79,7 @@ public class PackageFileProvenanceGenerator implements LdpPackageProvenanceGener
                                                           null,
                                                           null);
 
-        rdfResource.setBody(new ByteArrayInputStream(out.toByteArray()));
+        rdfResource.setBody(IOUtils.toInputStream("<> a <http://www.w3.org/ns/prov#Entity> ."));
         return rdfResource;
     }
 }
