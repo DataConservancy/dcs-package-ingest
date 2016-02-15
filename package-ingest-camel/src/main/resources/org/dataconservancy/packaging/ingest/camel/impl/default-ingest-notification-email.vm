@@ -1,0 +1,12 @@
+
+#if ($headers["deposit.success"])
+Your package $headers["package.source.uri"] was successfully deposited!
+
+The deposited contents are available for browse here:
+$headers["deposit.locations"]
+#else
+Your package deposit of $headers["package.source.uri"] failed:
+
+$headers["deposit.failure"]
+
+#end

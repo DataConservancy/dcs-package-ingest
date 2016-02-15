@@ -42,8 +42,8 @@
         <configuration>
           <!-- Container configuration -->
           <container>
-            <containerId>jetty8x</containerId>
-            <type>embedded</type>
+            <containerId>jetty9x</containerId>
+            <type>installed</type>
             <systemProperties>
               <fcrepo.home>${project.build.directory}/fcrepo</fcrepo.home>
             </systemProperties>
@@ -58,7 +58,6 @@
               </properties>
             </deployable>
           </deployables>
-          <wait>false</wait>
           <configuration>
             <properties>
               <cargo.servlet.port>${fedora.port}</cargo.servlet.port>

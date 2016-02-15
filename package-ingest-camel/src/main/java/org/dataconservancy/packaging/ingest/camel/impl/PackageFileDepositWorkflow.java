@@ -47,6 +47,14 @@ public class PackageFileDepositWorkflow
 
     private PackageFileDepositWorkflowConfig config;
 
+    /**
+     * Header that contains the URI to the originally deposited package
+     */
+    public static final String PACKAGE_SOURCE_URI = "package.source.uri";
+
+    /**
+     * Header that contains the URI(s) to the successfully deposited resources
+     */
     public static final String HEADER_RESOURCE_LOCATIONS = "deposit.locations";
 
     @Activate
@@ -70,7 +78,9 @@ public class PackageFileDepositWorkflow
                               config.package_poll_interval_ms());
 
         /* Poll the file */
-        from(fileSourceURI).id("deposit-poll-file").to("direct:deposit");
+        from(fileSourceURI).id("deposit-poll-file")
+                .setHeader(PACKAGE_SOURCE_URI).constant(fileSourceURI)
+                .to("direct:deposit");
 
         /* Main deposit workflow */
         from("direct:deposit").id("deposit-workflow")
@@ -90,7 +100,7 @@ public class PackageFileDepositWorkflow
                 .to(ROUTE_NOTIFICATION_FAIL).end().stop().end().doTry()
                 .enrich("direct:_canonicalize_resources", (orig, updated) -> {
                     orig.getIn()
-                            .setHeader(HEADER_RESOURCE_LOCATIONS,
+                            .setHeader(/* List<String> */HEADER_RESOURCE_LOCATIONS,
                                        updated.getIn()
                                                .getHeader(HEADER_RESOURCE_LOCATIONS));
                     return orig;
