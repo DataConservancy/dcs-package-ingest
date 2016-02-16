@@ -215,6 +215,12 @@
         <version>1.9</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.apache.tika</groupId>
+        <artifactId>tika-java7</artifactId>
+        <version>1.10</version>
+      </dependency>
+
     </dependencies>
 
   </dependencyManagement>
