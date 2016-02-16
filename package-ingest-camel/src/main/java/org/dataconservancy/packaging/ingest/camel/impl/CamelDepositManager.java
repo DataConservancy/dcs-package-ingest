@@ -11,7 +11,10 @@ import java.util.stream.Collectors;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.properties.PropertiesComponent;
+import org.apache.camel.impl.JndiRegistry;
+import org.apache.camel.impl.PropertyPlaceholderDelegateRegistry;
 import org.apache.camel.impl.SimpleRegistry;
+import org.apache.camel.util.jsse.SSLContextParameters;
 import org.dataconservancy.packaging.ingest.camel.ContextFactory;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.dataconservancy.packaging.ingest.camel.DepositManager;
@@ -83,6 +86,7 @@ public class CamelDepositManager implements DepositManager {
 		if (active.get()) {
 			try {
 				SimpleRegistry registry = new SimpleRegistry();
+                configureSslContext(registry);
 				CamelContext context = cxtFactory.newContext("", registry);
 
 				Properties p = new Properties(globalProperties);
@@ -145,4 +149,16 @@ public class CamelDepositManager implements DepositManager {
 	static void updateProperties(Properties props, Map<String, Object> map) {
 		props.putAll(map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, v -> v.toString())));
 	}
+
+	void configureSslContext(SimpleRegistry registry) {
+        // TODO make this set up configurable via OSGi
+//        KeyStoreParameters ksp = new KeyStoreParameters();
+//        ksp.setResource("/users/home/server/truststore.jks");
+//        ksp.setPassword("keystorePassword");
+//        TrustManagersParameters tmp = new TrustManagersParameters();
+//        tmp.setKeyStore(ksp);
+        SSLContextParameters scp = new SSLContextParameters();
+//        scp.setTrustManagers(tmp);
+        registry.put("sslContextParameters", scp);
+    }
 }

@@ -42,22 +42,6 @@ public class EmailNotifications
     @Override
     public void configure() throws Exception {
 
-//        KeyStoreParameters ksp = new KeyStoreParameters();
-//        ksp.setResource("/users/home/server/truststore.jks");
-//        ksp.setPassword("keystorePassword");
-//        TrustManagersParameters tmp = new TrustManagersParameters();
-//        tmp.setKeyStore(ksp);
-        SSLContextParameters scp = new SSLContextParameters();
-//        scp.setTrustManagers(tmp);
-
-        // TODO: fix this hack; probably should be set in Spring or JNDI
-        Registry registry = getContext().getRegistry();
-        if (registry instanceof JndiRegistry) {
-            ((JndiRegistry) registry).bind("sslContextParameters", scp);
-        } else if (registry instanceof PropertyPlaceholderDelegateRegistry) {
-            ((JndiRegistry) ((PropertyPlaceholderDelegateRegistry) registry).getRegistry()).bind("sslContextParameters", scp);
-        }
-
         from(ROUTE_NOTIFICATION_FAIL)
                 .setHeader(DEPOSIT_SUCCESS).constant(false)
                 .setHeader(DEPOSIT_FAILURE).exchangeProperty(Exchange.EXCEPTION_CAUGHT)
