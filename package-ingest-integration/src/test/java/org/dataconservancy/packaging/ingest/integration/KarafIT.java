@@ -20,7 +20,7 @@ import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.dataconservancy.packaging.ingest.camel.DepositManager;
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
-import org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications;
+import org.dataconservancy.packaging.ingest.camel.impl.LoggerNotifications;
 import org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow;
 import org.ops4j.pax.exam.Configuration;
@@ -82,7 +82,7 @@ public class KarafIT
                         .useDeployFolder(false),
                 keepRuntimeFolder(), configureConsole().ignoreLocalConsole(),
 
-                configFile(EmailNotifications.class),
+                configFile(LoggerNotifications.class),
                 configFile(FedoraDepositDriver.class),
                 configFile(PackageFileAnalyzerFactory.class),
                 configFile(PackageFileDepositWorkflow.class, "test"),
