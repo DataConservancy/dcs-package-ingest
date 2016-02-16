@@ -20,7 +20,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@Ignore
 public class PackageFileAnalyzerTest {
 
     private PackageFileAnalyzer underTest;
