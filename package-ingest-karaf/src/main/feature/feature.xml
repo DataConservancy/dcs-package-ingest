@@ -16,6 +16,7 @@
     <!-- Camel -->
     <feature version="${camel.version}">camel-core</feature>
     <feature version="${camel.version}">camel-http4</feature>
-
+    <feature version="${camel.version}">camel-velocity</feature>
+    <feature version="${camel.version}">camel-mail</feature>
   </feature>
 </features>
