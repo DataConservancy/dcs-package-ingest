@@ -14,8 +14,8 @@ import org.apache.camel.test.junit4.CamelTestSupport;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.dataconservancy.packaging.impl.PackageFileAnalyzer;
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
+import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
+import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.dataconservancy.packaging.ingest.camel.DepositManager;
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
@@ -60,7 +60,7 @@ public class KarafIT
     public DepositDriver driver;
 
     @Inject
-    public LdpPackageAnalyzer<File> analyzer;
+    public LdpPackageAnalyzerFactory<File> analyzerFactory;
 
     @Configuration
     public Option[] config() {
@@ -84,7 +84,7 @@ public class KarafIT
 
                 configFile(EmailNotifications.class),
                 configFile(FedoraDepositDriver.class),
-                configFile(PackageFileAnalyzer.class),
+                configFile(PackageFileAnalyzerFactory.class),
                 configFile(PackageFileDepositWorkflow.class, "test"),
                 configFile(PackageFileDepositWorkflow.class, "test2"),
 

@@ -32,9 +32,12 @@ import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.update.UpdateAction;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
+import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.LdpResource;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 
@@ -51,6 +54,9 @@ import static org.dataconservancy.packaging.ingest.camel.impl.LdpDepositDriver.I
 @SuppressWarnings("serial")
 public class LdpDepositDriverTest
         extends CamelTestSupport {
+
+    @Rule
+    public TemporaryFolder extractFolder = new TemporaryFolder();
 
     @EndpointInject(uri = "mock:out")
     private MockEndpoint mockOut = new MockEndpoint();
@@ -194,12 +200,17 @@ public class LdpDepositDriverTest
                         PARENT_RESOURCE_URI,
                         DESCRIPTION_RESOURCE_URI)));
 
+        LdpPackageAnalyzerFactory<File> analyzerFactory =
+                mock(LdpPackageAnalyzerFactory.class);
+
         LdpPackageAnalyzer<File> analyzer =
                 (LdpPackageAnalyzer<File>) mock(LdpPackageAnalyzer.class);
         when(analyzer.getContainerRoots(file))
                 .thenReturn(Arrays.asList(parent));
 
-        driver.setPackageAnalyzer(analyzer);
+        when(analyzerFactory.newAnalyzer()).thenReturn(analyzer);
+
+        driver.setPackageAnalyzerFactory(analyzerFactory);
 
         MockLDP ldp = new MockLDP();
 
@@ -386,6 +397,8 @@ public class LdpDepositDriverTest
     @SuppressWarnings("unchecked")
     protected RouteBuilder createRouteBuilder() {
         driver = new LdpDepositDriver();
+        driver.setPackageAnalyzerFactory(mock(LdpPackageAnalyzerFactory.class));
+
         driver.init();
 
         return new RouteBuilder() {

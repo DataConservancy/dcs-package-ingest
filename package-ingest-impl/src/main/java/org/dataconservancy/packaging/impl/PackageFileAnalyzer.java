@@ -31,15 +31,9 @@ import org.apache.jena.rdf.model.ResourceFactory;
 
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
 import org.dataconservancy.packaging.ingest.LdpResource;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.metatype.annotations.Designate;
 
 import static org.dataconservancy.packaging.impl.UriUtility.resolveBagUri;
 
-@Component(service = LdpPackageAnalyzer.class, configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
-@Designate(ocd = PackageFileAnalyzerConfig.class)
 public class PackageFileAnalyzer
         implements LdpPackageAnalyzer<File> {
     
@@ -64,16 +58,6 @@ public class PackageFileAnalyzer
         this.extractDir = extractDir;
     }
     
-    public PackageFileAnalyzer() {
-        packageService = new OpenPackageService();
-    }
-    
-    @Activate
-    public void init(PackageFileAnalyzerConfig config) {
-        extractDir = new File(config.package_extract_dir());
-        extractDir.mkdirs();
-    }
-
     @Override
     public Collection<LdpResource> getContainerRoots(File pkg) {
         Map<URI, LdpResource> packageContainerResources = new HashMap<>();

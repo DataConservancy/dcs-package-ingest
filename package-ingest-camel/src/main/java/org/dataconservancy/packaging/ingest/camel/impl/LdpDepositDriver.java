@@ -25,6 +25,7 @@ import org.apache.jena.riot.system.StreamRDFLib;
 import org.apache.jena.util.ResourceUtils;
 
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
+import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.LdpPackageProvenanceGenerator;
 import org.dataconservancy.packaging.ingest.LdpResource;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
@@ -69,6 +70,8 @@ public class LdpDepositDriver
 
     public static final String HEADER_RESOURCE = "deposit.ldp.resource";
 
+    public static final String HEADER_ANALYZER = "deposit.ldp.analyer";
+
     public static final String HEADER_RESOURCE_DESCRIPTION =
             "deposit.ldp.resource_description";
 
@@ -78,7 +81,7 @@ public class LdpDepositDriver
 
     static final String ID_HTTP_OPERATION = "ldp-http-operation";
 
-    private LdpPackageAnalyzer<File> analyzer;
+    private LdpPackageAnalyzerFactory<File> analyzerFactory;
 
     LdpPackageProvenanceGenerator<File> provGen;
 
@@ -102,8 +105,8 @@ public class LdpDepositDriver
     }
 
     @Reference
-    public void setPackageAnalyzer(LdpPackageAnalyzer<File> analyzer) {
-        this.analyzer = analyzer;
+    public void setPackageAnalyzerFactory(LdpPackageAnalyzerFactory<File> analyzerFactory) {
+        this.analyzerFactory = analyzerFactory;
     }
 
     @Reference
@@ -122,17 +125,25 @@ public class LdpDepositDriver
          * Headers: -
          */
         from(ROUTE_DEPOSIT_RESOURCES).id("ldp-deposit-all-resources")
-                .to("direct:_setup_for_deposit")
-                .process(m -> m.getIn()
-                        .setHeader(HEADER_LDP_RESOURCES,
-                                   analyzer.getContainerRoots(m.getIn()
-                                           .getBody(File.class))))
-                .split(header(HEADER_LDP_RESOURCES), MERGE_URI_MAP)
+                .to("direct:_setup_for_deposit").doTry().process(m -> {
+                    LdpPackageAnalyzer<File> analyzer =
+                            m.getIn().getHeader(HEADER_ANALYZER,
+                                                LdpPackageAnalyzer.class);
+                    m.getIn().setHeader(HEADER_LDP_RESOURCES,
+                                        analyzer.getContainerRoots(m.getIn()
+                                                .getBody(File.class)));
+                }).split(header(HEADER_LDP_RESOURCES), MERGE_URI_MAP)
                 .stopOnException().to("direct:_deposit_hierarchical").end()
-                .enrich("direct:_do_update_uris", ((orig, updated) -> orig));
+                .enrich("direct:_do_update_uris", ((orig, updated) -> orig))
+                .endDoTry().doFinally()
+                .process(e -> e.getIn()
+                        .getHeader(HEADER_ANALYZER, LdpPackageAnalyzer.class)
+                        .cleanUpExtractionDirectory());
 
         /* Initial setup for a series of subsequent LDP deposits */
         from("direct:_setup_for_deposit").id("ldp-deposit-setup")
+                .setHeader(HEADER_ANALYZER,
+                           expression(e -> analyzerFactory.newAnalyzer()))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .setHeader(HEADER_BINARY_URIS, constant(new HashSet<>()))
                 .setHeader(HEADER_URI_MAP, constant(new HashMap<>()));

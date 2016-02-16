@@ -35,8 +35,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.dataconservancy.packaging.impl.PackageFileAnalyzer;
-import org.dataconservancy.packaging.impl.PackageFileAnalyzerConfig;
+import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
+import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactoryConfig;
 import org.dataconservancy.packaging.impl.PackageFileProvenanceGenerator;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.CamelDepositManager;
@@ -88,6 +88,7 @@ public class DepositIT {
         success.clear();
         FileUtils.cleanDirectory(new File(PACKAGE_DEPOSIT_DIR));
         FileUtils.cleanDirectory(new File(PACKAGE_FAIL_DIR));
+        FileUtils.cleanDirectory(new File(PACKAGE_EXTRACT_DIR));
     }
 
     @After
@@ -115,6 +116,9 @@ public class DepositIT {
 
         /* Fail directory should now have one package in it */
         assertEquals(1, failDir.toFile().list().length);
+        
+        /* Extract directory should be empty */
+        assertEquals(0, new File(PACKAGE_EXTRACT_DIR).list().length);
 
         assertEquals(0, success.size());
         assertEquals(1, fail.size());
@@ -140,6 +144,9 @@ public class DepositIT {
 
         /* Nothing in failure dir */
         assertEquals(0, new File(PACKAGE_FAIL_DIR).list().length);
+        
+        /* Extract directory should be empty */
+        assertEquals(0, new File(PACKAGE_EXTRACT_DIR).list().length);
 
         assertEquals(0, fail.size());
         assertEquals(1, success.size());
@@ -207,6 +214,9 @@ public class DepositIT {
                         .getIn().getHeader(HEADER_RESOURCE_LOCATIONS,
                                            Collection.class)));
         assertEquals(1, locations.size());
+        
+        /* Extract directory should be empty */
+        assertEquals(0, new File(PACKAGE_EXTRACT_DIR).list().length);
     }
 
     private File copyResource(String path, File file) throws IOException {
@@ -235,12 +245,12 @@ public class DepositIT {
             }
         };
 
-        PackageFileAnalyzerConfig analyzerConfig =
-                new PackageFileAnalyzerConfig() {
+        PackageFileAnalyzerFactoryConfig analyzerConfig =
+                new PackageFileAnalyzerFactoryConfig() {
 
                     @Override
                     public Class<? extends Annotation> annotationType() {
-                        return PackageFileAnalyzerConfig.class;
+                        return PackageFileAnalyzerFactoryConfig.class;
                     }
 
                     @Override
@@ -286,10 +296,11 @@ public class DepositIT {
         FedoraDepositDriver driver = new FedoraDepositDriver();
         driver.init(fedoraConfig);
 
-        PackageFileAnalyzer analyzer = new PackageFileAnalyzer();
-        analyzer.init(analyzerConfig);
+        PackageFileAnalyzerFactory analyzerFactory =
+                new PackageFileAnalyzerFactory();
+        analyzerFactory.init(analyzerConfig);
 
-        driver.setPackageAnalyzer(analyzer);
+        driver.setPackageAnalyzerFactory(analyzerFactory);
         driver.setPackageProvenanceGenerator(new PackageFileProvenanceGenerator());
 
         PackageFileDepositWorkflow rootDeposit =

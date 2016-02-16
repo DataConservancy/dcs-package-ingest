@@ -13,7 +13,7 @@ maven repository
 
 ### Manual (text file) configuration ###
 * Create the following files in `${karaf.home}/etc`.  These define some global configuration settings.  The easiest way to do this is to just copy from `package-ingest-integration/src/test/resources/cfg` and edit as appropriate
-    * `org.dataconservancy.packaging.impl.PackageFileAnalyzer.cfg`
+    * `org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory.cfg`
     * `org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications.cfg`
     * `org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver.cfg`
 * Create as many deposit workflow configurations as desired.  Each configuration can be used to specify a directory to watch for packages, as well as a Fedora container to deposit into.  Give each one a unique [name]
@@ -27,7 +27,7 @@ maven repository
     * Directly go to [http://localhost:8181/system/console/configMgr](http://localhost:8181/system/console/configMgr), or navigate `OSGi -> Configuration`
 * Scroll down to find the DCS package ingest components (org.dataconservancy.packaging.ingest.*)
 * For all that do not have a check mark next to them, click the edit button and fill in the fields.  Do this for:
-    * `org.dataconservancy.packaging.impl.PackageFileAnalyzer`
+    * `org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory`
     * `org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver`
     * `org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications`
 * Create as many deposit workflow configurations as desired.  Each configuration can be used to specify a directory to watch for packages, as well as a Fedora container to deposit into.  To do this, click the `+` button next to `org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow` and fill in the fields to add a configuration.  You can add or remove as many as you wish.

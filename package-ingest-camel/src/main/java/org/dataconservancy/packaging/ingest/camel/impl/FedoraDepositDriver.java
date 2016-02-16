@@ -7,7 +7,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.http.HttpHeaders;
 
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
+import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.LdpPackageProvenanceGenerator;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.osgi.service.component.annotations.Activate;
@@ -41,8 +41,8 @@ public class FedoraDepositDriver
     }
 
     @Reference
-    public void setPackageAnalyzer(LdpPackageAnalyzer<File> analyzer) {
-        super.setPackageAnalyzer(analyzer);
+    public void setPackageAnalyzerFactory(LdpPackageAnalyzerFactory<File> analyzerFactory) {
+        super.setPackageAnalyzerFactory(analyzerFactory);
     }
 
     @Reference
