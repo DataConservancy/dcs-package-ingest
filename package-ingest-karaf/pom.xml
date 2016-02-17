@@ -87,6 +87,12 @@
       <artifactId>package-ingest-osgi</artifactId>
       <version>${project.version}</version>
     </dependency>
+
+    <!--dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-velocity</artifactId>
+      <version>${camel.version}</version>
+    </dependency-->
    
   </dependencies>
 </project>

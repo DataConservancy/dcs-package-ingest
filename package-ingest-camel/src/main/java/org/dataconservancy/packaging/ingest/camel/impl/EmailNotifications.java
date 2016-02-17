@@ -3,16 +3,19 @@ package org.dataconservancy.packaging.ingest.camel.impl;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.impl.PropertyPlaceholderDelegateRegistry;
-import org.apache.camel.spi.Registry;
-import org.apache.camel.util.jsse.SSLContextParameters;
+import org.apache.camel.component.properties.PropertiesComponent;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Sends e-mail notification messages to specified recipients
@@ -22,6 +25,8 @@ import org.osgi.service.metatype.annotations.Designate;
 public class EmailNotifications
         extends RouteBuilder
         implements NotificationDriver {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EmailNotifications.class);
 
     /**
      * Header key whose presence in a message indicates a successful deposit occurred.  The value of the
@@ -42,6 +47,38 @@ public class EmailNotifications
     @Override
     public void configure() throws Exception {
 
+        PropertiesComponent pc = getContext().getComponent("properties", PropertiesComponent.class);
+
+        LOG.info("PC: {}", pc);
+        if (pc != null && pc.getInitialProperties() != null) {
+            LOG.info("Initial properties: {}", pc.getInitialProperties().entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue().toString()).collect(Collectors.joining(", ", "", "")));
+        }
+
+        if (pc != null && pc.getInitialProperties() != null) {
+            LOG.info("Override properties: {}", pc.getOverrideProperties().entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue().toString()).collect(Collectors.joining(", ", "", "")));
+        }
+
+        LOG.info("Registry 'props': {}",
+                getContext().getRegistry().lookupByNameAndType("props", Properties.class).entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue().toString()).collect(Collectors.joining(", ", "", "")));
+
+        LOG.info("mail.smtpHost from 'props': {}", getContext().getRegistry().lookupByNameAndType("props", Properties.class).getProperty("mail.smtpHost"));
+//        LOG.info("mail.smtpHost from 'resolvePropertyPlaceholders': {}", getContext().resolvePropertyPlaceholders("mail.smtpHost"));
+        LOG.info("mail.smtpHost from 'resolvePropertyPlaceholders' with {{}}: {}", getContext().resolvePropertyPlaceholders("{{mail.smtpHost}}"));
+
+        if (pc != null && pc.getLocations() != null) {
+            LOG.info("PropertiesComponent locations: {}", Stream.of(pc.getLocations()).collect(Collectors.joining(", ", "", "")));
+        } else {
+            LOG.info("PropertiesComponent reference or its locations were null (PropertiesComponent reference: {})", pc);
+        }
+//
+//        if (pc != null && pc.getPropertiesResolver() != null) {
+//            LOG.info("PropertiesComponent locations: {}", Stream.of(pc.getLocations()).collect(Collectors.joining(", ", "", "")));
+//        } else {
+//            LOG.info("PropertiesComponent reference or its locations were null (PropertiesComponent reference: {})", pc);
+//        }
+
+
+
         from(ROUTE_NOTIFICATION_FAIL)
                 .setHeader(DEPOSIT_SUCCESS).constant(false)
                 .setHeader(DEPOSIT_FAILURE).exchangeProperty(Exchange.EXCEPTION_CAUGHT)
@@ -52,20 +89,20 @@ public class EmailNotifications
                 .to("direct:_sendNotification");
 
         from("direct:_sendNotification")
-                .setHeader("CamelVelocityResourceUri").simple("{{template}}")
+                .setHeader("CamelVelocityResourceUri").simple("${mail.template}")
                 .choice()
                     .when(exchange -> exchange.getIn().getHeader(DEPOSIT_SUCCESS).equals(true))
-                        .setHeader("subject").simple("{{subjectSuccess}}").endChoice()
+                        .setHeader("subject").simple("${mail.subjectSuccess}").endChoice()
                     .otherwise()
-                        .setHeader("subject").simple("{{subjectFailure}}").end()
+                        .setHeader("subject").simple("${mail.subjectFailure}").end()
                 .to("velocity:dummy")
                 .choice()
-                    .when(simple("'{{smtpPort}}' != '25'"))
-                        .to("smtps://{{smtpHost}}:{{smtpPort}}?from={{from}}&to={{to}}&" +
+                    .when(simple("'${mail.smtpPort}' != '25'"))
+                        .to("smtps://{{mail.smtpHost}}:{{mail.smtpPort}}?from={{mail.from}}&to={{mail.to}}&" +
                             "sslContextParameters=#sslContextParameters&" +
-                            "username={{smtpUser}}&password={{smtpPass}}&debugMode={{debug}}")
+                            "username={{mail.smtpUser}}&password={{mail.smtpPass}}&debugMode={{mail.debug}}")
                 .otherwise()
-                    .to("smtp://{{smtpHost}}:{{smtpPort}}?from={{from}}&to={{to}}&debugMode={{debug}}");
+                    .to("smtp://{{mail.smtpHost}}:{{mail.smtpPort}}?from={{mail.from}}&to={{mail.to}}&debugMode={{mail.debug}}");
 
 
     }

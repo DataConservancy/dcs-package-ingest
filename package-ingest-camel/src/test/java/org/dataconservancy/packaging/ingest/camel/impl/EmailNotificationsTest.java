@@ -136,7 +136,6 @@ public class EmailNotificationsTest extends CamelTestSupport {
     private void setUpProperties() {
         PropertiesComponent pc = context().getComponent("properties", PropertiesComponent.class);
         pc.setLocation("classpath:org/dataconservancy/packaging/ingest/camel/impl/EmailNotificationsConfig.properties");
-        pc.setPropertyPrefix("mail.");
     }
 
     private void setUpRegistry() {

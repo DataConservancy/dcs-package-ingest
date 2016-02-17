@@ -23,7 +23,7 @@ public @interface EmailNotificationsConfig {
     String mail_smtpPort() default DEFAULT_SMTP_PORT;
 
     @AttributeDefinition(description = "Username used to authenticate when sending notifications (optional)")
-    String mail_smtUser();
+    String mail_smtpUser();
 
     @AttributeDefinition(description = "Password used to authenticate when sending notifications (optional)")
     String mail_smtpPass();

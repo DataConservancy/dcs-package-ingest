@@ -31,6 +31,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
+import org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications;
+import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -245,6 +247,63 @@ public class DepositIT {
             }
         };
 
+        EmailNotificationsConfig emailConfig = new EmailNotificationsConfig() {
+            @Override
+            public String mail_smtpHost() {
+                return "localhost";
+            }
+
+            @Override
+            public String mail_smtpUser() {
+                return "fooSmtpUser";
+            }
+
+            @Override
+            public String mail_smtpPass() {
+                return "barSmtpPass";
+            }
+
+            @Override
+            public String mail_to() {
+                return "user@remoteHost";
+            }
+
+            @Override
+            public String mail_smtpPort() {
+                return EmailNotificationsConfig.DEFAULT_SMTP_PORT;
+            }
+
+            @Override
+            public String mail_from() {
+                return EmailNotificationsConfig.DEFAULT_SENDER;
+            }
+
+            @Override
+            public String mail_template() {
+                return EmailNotificationsConfig.DEFAULT_SUCCESS_TEMPLATE;
+            }
+
+            @Override
+            public String mail_subjectSuccess() {
+                return EmailNotificationsConfig.DEFAULT_SUCCESS_NOTIFICATION_SUBJECT;
+            }
+
+            @Override
+            public String mail_subjectFailure() {
+                return EmailNotificationsConfig.DEFAULT_FAILURE_NOTIFICATION_SUBJECT;
+            }
+
+            @Override
+            public String mail_debug() {
+                return EmailNotificationsConfig.DEFAULT_DEBUG;
+            }
+
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return EmailNotificationsConfig.class;
+            }
+        };
+
         PackageFileAnalyzerFactoryConfig analyzerConfig =
                 new PackageFileAnalyzerFactoryConfig() {
 
@@ -311,7 +370,7 @@ public class DepositIT {
         mgr = new CamelDepositManager();
         mgr.setContextFactory(new DefaultContextFactory());
         mgr.setDepositDriver(driver, asMap(fedoraConfig));
-        mgr.setNotificationDriver(new NotificationProbe(), new HashMap<>());
+        mgr.setNotificationDriver(new NotificationProbe(), asMap(emailConfig));
         mgr.addDepositWorkflow(rootDeposit, asMap(workflowConfig));
 
         mgr.init();
@@ -323,11 +382,18 @@ public class DepositIT {
 
         @Override
         public void configure() throws Exception {
-            from(NotificationDriver.ROUTE_NOTIFICATION_SUCCESS)
+
+            EmailNotifications emailNotifications = new EmailNotifications();
+
+            emailNotifications.getRouteCollection()
+                    .interceptSendToEndpoint(NotificationDriver.ROUTE_NOTIFICATION_SUCCESS)
                     .process(e -> success.add(e.copy()));
 
-            from(NotificationDriver.ROUTE_NOTIFICATION_FAIL)
+            emailNotifications.getRouteCollection()
+                    .interceptSendToEndpoint(NotificationDriver.ROUTE_NOTIFICATION_FAIL)
                     .process(e -> fail.add(e.copy()));
+
+            emailNotifications.addRoutesToCamelContext(getContext());
         }
     }
 
