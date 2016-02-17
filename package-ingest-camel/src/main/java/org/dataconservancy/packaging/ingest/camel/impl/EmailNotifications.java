@@ -3,25 +3,40 @@ package org.dataconservancy.packaging.ingest.camel.impl;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.impl.PropertyPlaceholderDelegateRegistry;
-import org.apache.camel.spi.Registry;
-import org.apache.camel.util.jsse.SSLContextParameters;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.metatype.annotations.Designate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Sends e-mail notification messages to specified recipients
+ * Sends e-mail notification messages to specified recipients.  This implementation uses the SMTP server
+ * port number to determine whether plain text, SSL, or TLS are to be used when connecting to an SMTP
+ * email relay.
+ * <dl>
+ * <dt>25</dt><dd>plain text</dd>
+ * <dt>465</dt><dd>SSL</dd>
+ * <dt>587</dt><dd>TLS (<strong>not supported</strong>)</dd>
+ * </dl>
+ * <strong>TLS</strong> is <em>not</em> supported, so using a port number of {@code 587} is not recommended.  Port
+ * numbers other than the ones defined above are not supported at this time.
+ * <p>
+ * The other configuration properties used by this class are defined in {@link EmailNotificationsConfig}, and have
+ * sensible defaults.
+ * </p>
+ *
+ * @see EmailNotificationsConfig
  */
 @Component(service = NotificationDriver.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Designate(ocd = EmailNotificationsConfig.class)
 public class EmailNotifications
         extends RouteBuilder
         implements NotificationDriver {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EmailNotifications.class);
 
     /**
      * Header key whose presence in a message indicates a successful deposit occurred.  The value of the
@@ -52,21 +67,21 @@ public class EmailNotifications
                 .to("direct:_sendNotification");
 
         from("direct:_sendNotification")
-                .setHeader("CamelVelocityResourceUri").simple("{{template}}")
+                .setHeader("CamelVelocityResourceUri").simple("${properties:mail.template}")
                 .choice()
                     .when(exchange -> exchange.getIn().getHeader(DEPOSIT_SUCCESS).equals(true))
-                        .setHeader("subject").simple("{{subjectSuccess}}").endChoice()
+                        .setHeader("subject").simple("${properties:mail.subjectSuccess}").endChoice()
                     .otherwise()
-                        .setHeader("subject").simple("{{subjectFailure}}").end()
+                        .setHeader("subject").simple("${properties:mail.subjectFailure}").end()
                 .to("velocity:dummy")
                 .choice()
-                    .when(simple("'{{smtpPort}}' != '25'"))
-                        .to("smtps://{{smtpHost}}:{{smtpPort}}?from={{from}}&to={{to}}&" +
+                    .when(simple("'${properties:mail.smtpPort}' != '25'"))
+                        .to("smtps://{{mail.smtpHost}}:{{mail.smtpPort}}?from={{mail.from}}&to={{mail.to}}&" +
                             "sslContextParameters=#sslContextParameters&" +
-                            "username={{smtpUser}}&password={{smtpPass}}&debugMode={{debug}}")
-                .otherwise()
-                    .to("smtp://{{smtpHost}}:{{smtpPort}}?from={{from}}&to={{to}}&debugMode={{debug}}");
-
+                            "username={{mail.smtpUser}}&password={{mail.smtpPass}}&debugMode={{mail.debug}}")
+                        .otherwise()
+                            .to("smtp://{{mail.smtpHost}}:{{mail.smtpPort}}?from={{mail.from}}&to={{mail.to}}&" +
+                                    "debugMode={{mail.debug}}");
 
     }
 

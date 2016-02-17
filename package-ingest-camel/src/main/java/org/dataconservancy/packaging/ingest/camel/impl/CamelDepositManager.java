@@ -25,9 +25,13 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component(service = DepositManager.class, immediate = true)
 public class CamelDepositManager implements DepositManager {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CamelDepositManager.class);
 
 	Properties globalProperties = new Properties();
 
@@ -56,8 +60,8 @@ public class CamelDepositManager implements DepositManager {
 
 	@Reference(cardinality = ReferenceCardinality.MANDATORY)
 	public void setNotificationDriver(NotificationDriver driver, Map<String, Object> props) {
-		updateProperties(globalProperties, props);
-		this.notification = driver;
+        updateProperties(globalProperties, props);
+        this.notification = driver;
 	}
 
 	@Reference(cardinality = ReferenceCardinality.MULTIPLE)
@@ -76,38 +80,50 @@ public class CamelDepositManager implements DepositManager {
 
 	@Activate
 	public void init() {
+        LOG.debug("Initializing Data Conservancy Package Ingest Framework...");
+        int count = 0;
 		active.set(true);
 		while (pendingWorkflows.peek() != null) {
 			initDepositWorkflow(pendingWorkflows.remove());
+            count++;
 		}
+        LOG.info("Data Conservancy Package Ingest Framework initialized: created {} deposit workflow(s)", count);
 	}
 
 	public void initDepositWorkflow(WorkflowConfiguration wf) {
 		if (active.get()) {
+            LOG.debug("--> Initializing deposit workflow: {}", wf);
 			try {
 				SimpleRegistry registry = new SimpleRegistry();
                 configureSslContext(registry);
+
 				CamelContext context = cxtFactory.newContext("", registry);
 
-				Properties p = new Properties(globalProperties);
-				updateProperties(p, wf.props);
+				Properties p = copy(globalProperties);
+
+                updateProperties(p, wf.props);
+
 				registry.put("props", p);
 
 				PropertiesComponent pc = context.getComponent("properties", PropertiesComponent.class);
 				pc.setLocation("ref:props");
 
-				contexts.put(wf.routes, context);
+                contexts.put(wf.routes, context);
 
-				notification.addRoutesToCamelContext(context);
+                notification.addRoutesToCamelContext(context);
 				deposit.addRoutesToCamelContext(context);
 				wf.routes.addRoutesToCamelContext(context);
 
-				context.start();
+                LOG.debug("--> Starting Camel Context {} for workflow.", context.getName());
+                context.start();
+                LOG.debug("--> Initialized deposit workflow: {}", wf);
 			} catch (Exception e) {
-				throw new RuntimeException(e);
+                LOG.warn("--> Error configuring deposit workflow {}: {}", wf, e);
+                throw new RuntimeException(e);
 			}
 		} else {
-			pendingWorkflows.add(wf);
+            LOG.debug("--> Adding pending package deposit workflow: {}", wf);
+            pendingWorkflows.add(wf);
 		}
 	}
 
@@ -147,7 +163,7 @@ public class CamelDepositManager implements DepositManager {
 	}
 
 	static void updateProperties(Properties props, Map<String, Object> map) {
-		props.putAll(map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, v -> v.toString())));
+		props.putAll(map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toString())));
 	}
 
 	void configureSslContext(SimpleRegistry registry) {
@@ -160,5 +176,11 @@ public class CamelDepositManager implements DepositManager {
         SSLContextParameters scp = new SSLContextParameters();
 //        scp.setTrustManagers(tmp);
         registry.put("sslContextParameters", scp);
+    }
+
+    Properties copy(Properties props) {
+        Properties copy = new Properties();
+        copy.putAll(props);
+        return copy;
     }
 }

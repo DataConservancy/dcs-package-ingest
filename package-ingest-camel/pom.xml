@@ -15,6 +15,7 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
+          <niceManifest>true</niceManifest>
           <instructions>
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Import-Package>*</Import-Package>
@@ -45,6 +46,11 @@
       <artifactId>org.osgi.service.metatype.annotations</artifactId>
       <version>1.3.0</version>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <dependency>
@@ -112,9 +118,12 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Uncomment if unit tests are failing;
+         Camel will emit useful information about
+         the routes and any exceptions -->
     <!--dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
+      <artifactId>slf4j-nop</artifactId>
       <scope>test</scope>
     </dependency-->
 
