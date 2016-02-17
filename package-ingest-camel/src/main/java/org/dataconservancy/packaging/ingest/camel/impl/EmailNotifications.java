@@ -89,15 +89,15 @@ public class EmailNotifications
                 .to("direct:_sendNotification");
 
         from("direct:_sendNotification")
-                .setHeader("CamelVelocityResourceUri").simple("${mail.template}")
+                .setHeader("CamelVelocityResourceUri").simple("${properties:mail.template}")
                 .choice()
                     .when(exchange -> exchange.getIn().getHeader(DEPOSIT_SUCCESS).equals(true))
-                        .setHeader("subject").simple("${mail.subjectSuccess}").endChoice()
+                        .setHeader("subject").simple("${properties:mail.subjectSuccess}").endChoice()
                     .otherwise()
-                        .setHeader("subject").simple("${mail.subjectFailure}").end()
+                        .setHeader("subject").simple("${properties:mail.subjectFailure}").end()
                 .to("velocity:dummy")
                 .choice()
-                    .when(simple("'${mail.smtpPort}' != '25'"))
+                    .when(simple("'${properties:mail.smtpPort}' != '25'"))
                         .to("smtps://{{mail.smtpHost}}:{{mail.smtpPort}}?from={{mail.from}}&to={{mail.to}}&" +
                             "sslContextParameters=#sslContextParameters&" +
                             "username={{mail.smtpUser}}&password={{mail.smtpPass}}&debugMode={{mail.debug}}")
