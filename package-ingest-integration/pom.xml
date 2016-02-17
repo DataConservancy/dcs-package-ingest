@@ -123,6 +123,10 @@
 
     <testResources>
       <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>false</filtering>
+      </testResource>
+      <testResource>
         <directory>src/test/resources/cfg</directory>
         <filtering>true</filtering>
         <targetPath>cfg</targetPath>
