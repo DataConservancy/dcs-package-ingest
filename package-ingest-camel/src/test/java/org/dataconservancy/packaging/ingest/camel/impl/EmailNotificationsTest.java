@@ -4,10 +4,8 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.Message;
-import org.apache.camel.Processor;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.properties.PropertiesComponent;
@@ -16,27 +14,23 @@ import org.apache.camel.impl.DefaultMessage;
 import org.apache.camel.impl.JndiRegistry;
 import org.apache.camel.impl.PropertyPlaceholderDelegateRegistry;
 import org.apache.camel.impl.SimpleRegistry;
-import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.spi.Registry;
 import org.apache.camel.test.junit4.CamelTestSupport;
 import org.apache.camel.util.jsse.SSLContextParameters;
-import org.apache.commons.collections.map.HashedMap;
-import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
 
 import static org.dataconservancy.packaging.ingest.camel.NotificationDriver.ROUTE_NOTIFICATION_FAIL;
 import static org.dataconservancy.packaging.ingest.camel.NotificationDriver.ROUTE_NOTIFICATION_SUCCESS;
 
 /**
- * Created by esm on 2/12/16.
+ * Assures that the EmailNotifications route builder is properly creating routes and producing
+ * correctly-interpolated messages on success and failure.
  */
 public class EmailNotificationsTest extends CamelTestSupport {
 
@@ -50,6 +44,12 @@ public class EmailNotificationsTest extends CamelTestSupport {
     @EndpointInject(uri = "mock:out")
     private MockEndpoint mockOut = new MockEndpoint();
 
+    /**
+     * Insures the route for successful notifications can be executed.
+     * Insures that there are no un-interpolated placeholders in a
+     * successful notification message.
+     * Insures that interpolated placeholders contain their correct values.
+     */
     @Test
     public void testNotificationSuccess() throws Exception {
         final String packageSourceUri = "file:///path/to/package.tar.gz";
@@ -77,9 +77,15 @@ public class EmailNotificationsTest extends CamelTestSupport {
         assertTrue(messageBody.contains(packageSourceUri));
         assertTrue(messageBody.contains(resourceLocations.get(0)));
         assertTrue(messageBody.contains(resourceLocations.get(1)));
+        assertAllPropertiesInterpolated(messageBody);
     }
 
-
+    /**
+     * Insures the route for failed notifications can be executed.
+     * Insures that there are no un-interpolated placeholders in a
+     * failed notification message.
+     * Insures that interpolated placeholders contain their correct values.
+     */
     @Test
     public void testNotificationFail() throws Exception {
         DefaultExchange ex = new DefaultExchange(context());
@@ -92,6 +98,8 @@ public class EmailNotificationsTest extends CamelTestSupport {
         ex.setProperty(Exchange.EXCEPTION_CAUGHT, failureException);
         in.setHeader(PackageFileDepositWorkflow.PACKAGE_SOURCE_URI, "file:///path/to/package.tar.gz");
 
+        // Assert properties can be resolved
+        assertEquals("localhost", context().resolvePropertyPlaceholders("{{mail.smtpHost}}"));
 
         template.send("direct:testNotificationFail", ex);
 
@@ -108,12 +116,26 @@ public class EmailNotificationsTest extends CamelTestSupport {
         assertFalse(messageBody.contains(PackageFileDepositWorkflow.PACKAGE_SOURCE_URI));
     }
 
+    /**
+     * Fails if the message body contains prefixs or suffixes known to delimit property placeholders.
+     *
+     * @param messageBody the email message body that has been parameterized and interpolated by Velocity
+     */
+    private void assertAllPropertiesInterpolated(String messageBody) {
+        assertFalse(messageBody.contains("{{"));
+        assertFalse(messageBody.contains("${"));
+        assertFalse(messageBody.contains("}}"));
+    }
+
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
         notifications = new EmailNotifications();
 
         setUpProperties();
         setUpRegistry();
+
+        // Assert properties can be resolved
+        assertEquals("localhost", context().resolvePropertyPlaceholders("{{mail.smtpHost}}"));
 
         return new RouteBuilder() {
 
@@ -133,11 +155,19 @@ public class EmailNotificationsTest extends CamelTestSupport {
         };
     }
 
+    /**
+     * Populates the properties used to interpolate route endpoints.  In a normal runtime, these will be supplied
+     * by the CamelDepositManager.
+     */
     private void setUpProperties() {
         PropertiesComponent pc = context().getComponent("properties", PropertiesComponent.class);
         pc.setLocation("classpath:org/dataconservancy/packaging/ingest/camel/impl/EmailNotificationsConfig.properties");
     }
 
+    /**
+     * Creates the necessary environment to create SSL connections.  In a normal runtime, this would be supplied by
+     * the CamelDepositManager.
+     */
     private void setUpRegistry() {
         SSLContextParameters scp = new SSLContextParameters();
         Registry registry = unwrap(context().getRegistry());
@@ -148,6 +178,12 @@ public class EmailNotificationsTest extends CamelTestSupport {
         }
     }
 
+    /**
+     * Unwraps a PropertyPlaceholderDelegateRegistry to it's underlying implementation.
+     *
+     * @param registry the registry to unwrap
+     * @return the unwrapped registry
+     */
     private Registry unwrap(Registry registry) {
         if (registry instanceof PropertyPlaceholderDelegateRegistry) {
             return unwrap((

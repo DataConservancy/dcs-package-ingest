@@ -118,11 +118,14 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
+    <!-- Uncomment if unit tests are failing;
+         Camel will emit useful information about
+         the routes and any exceptions -->
+    <!--dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-nop</artifactId>
       <scope>test</scope>
-    </dependency>
+    </dependency-->
 
   </dependencies>
 </project>

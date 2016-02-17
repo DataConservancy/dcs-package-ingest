@@ -386,6 +386,13 @@ public class DepositIT {
             EmailNotifications emailNotifications = new EmailNotifications();
 
             emailNotifications.getRouteCollection()
+                    // TODO: Review
+                    // I'm not sure if this is the best way to do this, because if the
+                    // intercept occurs at the beginning of the route, the list of successful
+                    // exchanges is populated before the 'ROUTE_NOTIFICATION_SUCCESS' is executed.
+                    //
+                    // So the presence of an Exchange in the 'success' or 'fail' bucket should not
+                    // be interpreted as "the EmailNotifications route executed properly".
                     .interceptSendToEndpoint(NotificationDriver.ROUTE_NOTIFICATION_SUCCESS)
                     .process(e -> success.add(e.copy()));
 
