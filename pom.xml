@@ -45,6 +45,7 @@
     <osgi.version>5.0.0</osgi.version>
     <camel.version>2.16.1</camel.version>
     <karaf.version>4.0.4</karaf.version>
+    <jena.version>3.0.0</jena.version>
   </properties>
 
   <!-- Build ====================================================== -->
@@ -219,6 +220,22 @@
         <groupId>org.apache.tika</groupId>
         <artifactId>tika-java7</artifactId>
         <version>1.10</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.jena</groupId>
+        <artifactId>jena-osgi</artifactId>
+        <version>${jena.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
     </dependencies>
