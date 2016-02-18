@@ -4,6 +4,10 @@ Your package $headers["package.source.uri"] was successfully deposited!
 
 The deposited contents are available for browse here:
 $headers["deposit.locations"]
+
+The original package has been archived as well, details are available here:
+$headers["deposit.provenance.location"]
+
 #else
 Your package deposit of $headers["package.source.uri"] failed:
 

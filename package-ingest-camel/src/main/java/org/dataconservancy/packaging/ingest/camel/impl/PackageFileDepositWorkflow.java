@@ -79,7 +79,7 @@ public class PackageFileDepositWorkflow
 
         /* Poll the file */
         from(fileSourceURI).id("deposit-poll-file")
-                .setHeader(PACKAGE_SOURCE_URI).constant(fileSourceURI)
+                .setHeader(PACKAGE_SOURCE_URI, header(Exchange.FILE_PATH))
                 .to("direct:deposit");
 
         /* Main deposit workflow */
