@@ -64,14 +64,13 @@ public class FedoraDepositDriver
                         ((orig, resp) -> orig));
 
         from(ROUTE_TRANSACTION_CANONICALIZE).id("fedora-tx-canonicalize")
-                .process(e -> {
-                    e.getIn()
-                            .setHeader(Exchange.HTTP_URI,
-                                       headerString(e, Exchange.HTTP_URI)
-                                               .replace(headerString(e,
-                                                                     HEADER_FCTRPO_TX_BASEURI),
-                                                        config.fedora_baseuri()));
-                });
+                .process(e -> e.getIn()
+                        .setHeader(Exchange.HTTP_URI,
+                                   headerString(e, Exchange.HTTP_URI)
+                                           .replace(strip(headerString(e,
+                                                                       HEADER_FCTRPO_TX_BASEURI)),
+                                                    strip(config
+                                                            .fedora_baseuri()))));
 
         /*
          * Actually does the work of starting a transaction in Fedora
@@ -79,10 +78,10 @@ public class FedoraDepositDriver
          * a transaction in Fedora.
          */
         from("direct:_doStartTransaction").id(ID_START_TRANSACTION)
-                .removeHeaders("*", config.fedora_baseuri())
+                .removeHeaders("*")
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_URI,
-                           constant(config.fedora_baseuri() + "/fcr:tx"))
+                           constant(strip(config.fedora_baseuri()) + "/fcr:tx"))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                 .to("http4:fcrepo-host");
 
@@ -126,12 +125,20 @@ public class FedoraDepositDriver
         orig.getIn().setHeader(HEADER_FCTRPO_TX_BASEURI, txBase);
 
         if (dest != null) {
-            orig.getIn()
-                    .setHeader(Exchange.HTTP_URI,
-                               dest.replace(config.fedora_baseuri(), txBase));
+            orig.getIn().setHeader(Exchange.HTTP_URI,
+                                   dest.replace(strip(config.fedora_baseuri()),
+                                                strip(txBase)));
         }
         return orig;
     };
+
+    static String strip(String uri) {
+        if (uri.endsWith("/")) {
+            return uri.substring(0, uri.length() - 1);
+        } else {
+            return uri;
+        }
+    }
 
     static String headerString(Exchange e, String name) {
         return e.getIn().getHeader(name, String.class);
