@@ -10,11 +10,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
  * characters are replaced with a period.  So the method {@link #mail_smtpHost()} would translate to the Camel property
  * {@code mail.smtpHost}.
  * <dl>
- * <dt>mail.smtpHost</dt><dd><strong>Required:</strong> the outbound SMTP server which will be responsible for delivering the notification email.</dd>
  * <dt>mail.to</dt><dd><strong>Required:</strong> the comma-separated list of email address to deliver notifications to.</dd>
- * <dt>mail.smtpPort</dt><dd>Optional: the outbound SMTP server port.</dd>
- * <dt>mail.smtpUser</dt><dd>Optional: the username used to authenticate to the outbound SMTP server (aka SMTP AUTH).  Use this if your SMTP server requires authentication in order to send email.  <em>Requires the use of SSL.</em></dd>
- * <dt>mail.smtpPass</dt><dd>Optional: the password used to authenticate to the outbound SMTP server.</dd>
+ * <dt>mail.smtpHost</dt><dd>Optional: the outbound SMTP server which will be responsible for delivering the notification email.
+ *      <strong>N.B.</strong> the default mail server uses SMTP AUTH so you <em>must</em> supply a username and password if you use the
+ *      default value for {@code mail.smtpHost}</dd>
+ * <dt>mail.smtpPort</dt><dd>Optional: the outbound SMTP server port.  <em>Must be {@code 465} (the default) if using the default {@code mail.smtpHost}</em></dd>
+ * <dt>mail.smtpUser</dt><dd><strong>Required if using the default {@code mail.smtpHost}:</strong> the username used to authenticate to the outbound SMTP server (aka SMTP AUTH).  Use this if your SMTP server requires authentication in order to send email.  <em>Requires the use of SSL.</em></dd>
+ * <dt>mail.smtpPass</dt><dd><strong>Required if using the default {@code mail.smtpHost}:</strong> the password used to authenticate to the outbound SMTP server.</dd>
  * <dt>mail.from</dt><dd>Optional: the email address notifications will appear to be from.</dd>
  * <dt>mail.subjectFailure</dt><dd>Optional: the subject line of failed deposit notifications</dd>
  * <dt>mail.subjectSuccess</dt><dd>Optional: the subject line of successful deposit notifications</dd>
@@ -34,17 +36,19 @@ public @interface EmailNotificationsConfig {
     String DEFAULT_FAILURE_NOTIFICATION_SUBJECT = "Deposit Failure";
     String DEFAULT_SENDER = "noreply@localhost";
     String DEFAULT_DEBUG = "false";
+    String DEFAULT_SMTP_HOST = "smtp.gmail.com";
 
     // TODO SSL configuration parameters
 
-    @AttributeDefinition(description = "SMTP Server used to send email notifications (required)") String mail_smtpHost();
+    @AttributeDefinition(description = "SMTP Server used to send email notifications (optional, defaults to " + DEFAULT_SMTP_HOST + ")")
+    String mail_smtpHost();
 
-    @AttributeDefinition(description = "SMTP port number (optional, defaults to " + DEFAULT_SMTP_PORT + ")",
+    @AttributeDefinition(description = "SMTP port number (optional, must be " + DEFAULT_SMTP_PORT + " when using " + DEFAULT_SMTP_HOST + ")",
             defaultValue = DEFAULT_SMTP_PORT) String mail_smtpPort() default DEFAULT_SMTP_PORT;
 
-    @AttributeDefinition(description = "Username used to authenticate when sending notifications (optional)") String mail_smtpUser();
+    @AttributeDefinition(description = "Username used to authenticate when sending notifications (required if using " + DEFAULT_SMTP_HOST + ")") String mail_smtpUser();
 
-    @AttributeDefinition(description = "Password used to authenticate when sending notifications (optional)", type = AttributeType.PASSWORD) String mail_smtpPass();
+    @AttributeDefinition(description = "Password used to authenticate when sending notifications (required if using " + DEFAULT_SMTP_HOST + ")", type = AttributeType.PASSWORD) String mail_smtpPass();
 
     @AttributeDefinition(description = "E-mail address the notifications appear to be from (optional, defaults to " +
             DEFAULT_SENDER + ")", defaultValue = DEFAULT_SENDER) String mail_from() default DEFAULT_SENDER;
