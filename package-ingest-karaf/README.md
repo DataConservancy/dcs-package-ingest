@@ -32,7 +32,7 @@ maven repository
 * Create as many deposit workflow configurations as desired.  Each configuration can be used to specify a directory to watch for packages, as well as a Fedora container to deposit into.  Give each one a unique [name]. Sample config file for workflow can also be copied from `package-ingest-integration/src/test/resources/fgc`. 
     * `org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow-[name].cfg`
 
-(When editing these sample config files, replace the values placeholders with real values. For PackageFileDepositWorkflow-[name].cfg file, deposit.location should be the URI of the Fedora container to which the package's content is to be deposited.)
+(When editing these sample config files, replace the values placeholders with real values. For `PackageFileDepositWorkflow-[name].cfg` file, `deposit.location` should be the URI of the Fedora container to which the package's content is to be deposited.)
 
 ### Karaf Web Console Configuration ###
 * Install the [karaf web console](http://karaf.apache.org/manual/latest/users-guide/webconsole.html) feature from the karaf command line
