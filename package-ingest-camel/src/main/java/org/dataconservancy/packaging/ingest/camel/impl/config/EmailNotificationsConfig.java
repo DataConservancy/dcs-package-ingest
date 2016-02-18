@@ -1,6 +1,7 @@
 package org.dataconservancy.packaging.ingest.camel.impl.config;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.AttributeType;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 /**
@@ -21,7 +22,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
  * <dt>mail.debug</dt><dd>Optional: set to {@code true} to debug the interaction with the SMTP server.</dd>
  * </dl>
  */
-@ObjectClassDefinition(name = "org.dataconservancy.packaging.ingest.camel.impl.EmailNotificationsConfig", description = "E-mail notification config")
+@ObjectClassDefinition(name = "org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications", description = "E-mail notification config")
 public @interface EmailNotificationsConfig {
 
     String DEFAULT_SUCCESS_TEMPLATE = "org/dataconservancy/packaging/ingest/camel/default-ingest-notification-email.vm";
@@ -43,7 +44,7 @@ public @interface EmailNotificationsConfig {
 
     @AttributeDefinition(description = "Username used to authenticate when sending notifications (optional)") String mail_smtpUser();
 
-    @AttributeDefinition(description = "Password used to authenticate when sending notifications (optional)") String mail_smtpPass();
+    @AttributeDefinition(description = "Password used to authenticate when sending notifications (optional)", type = AttributeType.PASSWORD) String mail_smtpPass();
 
     @AttributeDefinition(description = "E-mail address the notifications appear to be from (optional, defaults to " +
             DEFAULT_SENDER + ")", defaultValue = DEFAULT_SENDER) String mail_from() default DEFAULT_SENDER;
