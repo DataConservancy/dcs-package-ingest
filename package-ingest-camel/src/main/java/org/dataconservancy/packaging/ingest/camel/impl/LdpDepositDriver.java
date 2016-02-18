@@ -185,8 +185,7 @@ public class LdpDepositDriver
                                                       .aggregate(existing,
                                                                  deposited);
                                           })
-                .setHeader(HEADER_LDP_RESOURCES,
-                           bodyAs(LdpResource.class).method("getChildren"))
+                .process(e -> e.getIn().setHeader(HEADER_LDP_RESOURCES, e.getIn().getBody(LdpResource.class).getChildren()))
                 .setHeader(HTTP_URI, header(LOCATION))
                 .to("direct:_deposit_iterate").end();
 
