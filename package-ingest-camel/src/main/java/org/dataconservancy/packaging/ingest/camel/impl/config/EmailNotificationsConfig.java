@@ -24,7 +24,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @ObjectClassDefinition(name = "org.dataconservancy.packaging.ingest.camel.impl.EmailNotificationsConfig", description = "E-mail notification config")
 public @interface EmailNotificationsConfig {
 
-    String DEFAULT_SUCCESS_TEMPLATE = "org/dataconservancy/packaging/ingest/camel/impl/default-ingest-notification-email.vm";
+    String DEFAULT_SUCCESS_TEMPLATE = "org/dataconservancy/packaging/ingest/camel/default-ingest-notification-email.vm";
     String SSL_SMTP_PORT = "465";
     String TLS_SMTP_PORT = "587";
     String PLAIN_SMTP_PORT = "25";
