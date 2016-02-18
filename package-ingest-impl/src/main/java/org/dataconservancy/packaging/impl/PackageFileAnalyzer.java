@@ -36,8 +36,10 @@ import static org.dataconservancy.packaging.impl.UriUtility.resolveBagUri;
 
 public class PackageFileAnalyzer
         implements LdpPackageAnalyzer<File> {
-    
+
     public static final String PARAM_EXTRACT_DIR = "pkg.extract.dir";
+
+    final String APPLICATION_OCTETSTREAM = "application/octet-stream";
 
     private final String BAG_INFO_NAME = "bag-info.txt";
     private final String REM_KEY = "Resource-Manifest";
@@ -153,7 +155,7 @@ public class PackageFileAnalyzer
         Path resourcePath = UriUtility.resolveBagUri(extractDirectory, binaryFileURI);
         String mimeType = Files.probeContentType(resourcePath);
         if (mimeType == null) {
-            mimeType = "application/octet-stream";
+            mimeType = APPLICATION_OCTETSTREAM;
         }
         binaryFileResource.setMediaType(mimeType);
         binaryFileResource.setBody(new FileInputStream(resourcePath.toFile()));

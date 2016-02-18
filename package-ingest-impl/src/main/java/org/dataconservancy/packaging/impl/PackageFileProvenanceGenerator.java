@@ -36,7 +36,11 @@ public class PackageFileProvenanceGenerator implements LdpPackageProvenanceGener
 
         try {
             resource.setBody(new FileInputStream(pkg));
-            resource.setMediaType(Files.probeContentType(pkg.toPath()));
+            String mediaType = Files.probeContentType(pkg.toPath());
+            if (mediaType == null || mediaType.trim().length() == 0) {
+                mediaType = PackageFileAnalyzer.APPLICATION_OCTETSTREAM;
+            }
+            resource.setMediaType(mediaType);
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Couldn't open input stream for package file: " + pkg.toString() + " .");
         } catch (IOException e) {
