@@ -14,7 +14,7 @@ public @interface PackageFileDepositWorkflowConfig {
     String package_deposit_dir();
 
     @AttributeDefinition(description = "Deposit files to this URI")
-    String deposit_location() default "http://localhost:8080/fedora/rest";
+    String deposit_location() default "http://localhost:8080/fcrepo/rest";
 
     @AttributeDefinition(description = "Filesystem path to a directory where failed package files will be placed")
     String package_fail_dir();

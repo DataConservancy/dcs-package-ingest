@@ -1,4 +1,4 @@
-package org.dataconservancy.packaging.ingest.camel.impl;
+package org.dataconservancy.packaging.ingest.camel.impl.config;
 
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -7,6 +7,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 public @interface FedoraConfig {
 
     @AttributeDefinition(description = "Fedora base URI.  Points to the 'root' container in Fedora")
-    String fedora_baseuri() default "http://localhost:8080/fedora/rest";
+    String fedora_baseuri() default "http://localhost:8080/fcrepo/rest";
     
 }

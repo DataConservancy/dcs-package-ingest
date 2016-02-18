@@ -19,6 +19,8 @@ import org.apache.http.HttpHeaders;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.dataconservancy.packaging.ingest.camel.impl.config.FedoraConfig;
+
 import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_TRANSACTION_BEGIN;
 import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_TRANSACTION_CANONICALIZE;
 import static org.dataconservancy.packaging.ingest.camel.DepositDriver.ROUTE_TRANSACTION_COMMIT;

@@ -10,6 +10,7 @@ import org.apache.http.HttpHeaders;
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.LdpPackageProvenanceGenerator;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
+import org.dataconservancy.packaging.ingest.camel.impl.config.FedoraConfig;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;

@@ -33,6 +33,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 import org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications;
 import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
+import org.dataconservancy.packaging.ingest.camel.impl.config.FedoraConfig;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +45,6 @@ import org.dataconservancy.packaging.impl.PackageFileProvenanceGenerator;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.CamelDepositManager;
 import org.dataconservancy.packaging.ingest.camel.impl.DefaultContextFactory;
-import org.dataconservancy.packaging.ingest.camel.impl.FedoraConfig;
 import org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow;
 import org.dataconservancy.packaging.ingest.camel.impl.config.PackageFileDepositWorkflowConfig;
