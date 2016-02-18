@@ -39,7 +39,7 @@ public class PackageFileAnalyzer
 
     public static final String PARAM_EXTRACT_DIR = "pkg.extract.dir";
 
-    final String APPLICATION_OCTETSTREAM = "application/octet-stream";
+    static final String APPLICATION_OCTETSTREAM = "application/octet-stream";
 
     private final String BAG_INFO_NAME = "bag-info.txt";
     private final String REM_KEY = "Resource-Manifest";
