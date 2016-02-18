@@ -11,10 +11,9 @@ import java.util.stream.Collectors;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.properties.PropertiesComponent;
-import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.impl.PropertyPlaceholderDelegateRegistry;
 import org.apache.camel.impl.SimpleRegistry;
 import org.apache.camel.util.jsse.SSLContextParameters;
+
 import org.dataconservancy.packaging.ingest.camel.ContextFactory;
 import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.dataconservancy.packaging.ingest.camel.DepositManager;
@@ -25,6 +24,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +64,9 @@ public class CamelDepositManager implements DepositManager {
         this.notification = driver;
 	}
 
-	@Reference(cardinality = ReferenceCardinality.MULTIPLE)
+	@Reference(cardinality = ReferenceCardinality.MULTIPLE, policyOption=ReferencePolicyOption.GREEDY)
 	public void addDepositWorkflow(DepositWorkflow workflow, Map<String, Object> props) {
+	    LOG.debug("Request to add new deposit workflow");
 		initDepositWorkflow(new WorkflowConfiguration(workflow, props));
 	}
 
@@ -128,6 +129,7 @@ public class CamelDepositManager implements DepositManager {
 	}
 
 	public void removeDepositWorkflow(DepositWorkflow workflow) {
+	    LOG.debug("Request to removve deposit workflow");
 		CamelContext cxt = contexts.remove(workflow);
 
 		if (cxt != null) {
