@@ -1,10 +1,23 @@
 
-## Manual Install ##
+## Install ##
+
+* [Download](https://karaf.apache.org/index/community/download.html) and unzip apache karaf 4.0+ if you haven't done so
+* Launch apache karaf, `${karaf.home}/bin/karaf`
+
+This starts an empty Karaf.  Now the package ingest application needs to be installed.  Install via `.kar` file, or features file in maven:
+
+### Via .kar file ###
+A karaf `.kar` file contains embedded dependencies and features files, and is deployed by placing it into
+Karaf's deploy directory.
+
+* Grab the package ingest .kar file from the INSERT LINK git release page, or from a local maven build `package-ingest-karaf/target/package-ingest-karaf-${version}.kar`
+* Place the kar file into `${karaf.home}/deploy`
+
+### Via features file in Maven ###
+A features file tells Karaf where to download the package ingest application and its dependencies.  Karaf can load any features file that has been released to Maven:
 
 * (This first step is required only before the release, since we won't have artifacts in the maven repository yet.) Go to the toplevel package-ingest/ and do `mvn clean install` so that the latest build is put into your local
 maven repository
-* [Download](https://karaf.apache.org/index/community/download.html) and unzip apache karaf 4.0+ if you haven't done so
-* Launch apache karaf, `${karaf.home}/bin/karaf`
 * At the Karaf console:
     * `feature:repo-add mvn:org.dataconservancy.packaging/package-ingest-karaf/LATEST/xml/features`
     * `feature:install package-ingest-karaf`

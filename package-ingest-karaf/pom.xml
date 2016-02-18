@@ -20,6 +20,15 @@
         <artifactId>karaf-maven-plugin</artifactId>
         <version>${karaf.version}</version>
         <extensions>true</extensions>
+         <executions>
+          <execution>
+            <id>generate-kar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>kar</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
           <!-- <resolver>(OBR)</resolver> -->
           <aggregateFeatures>true</aggregateFeatures>
