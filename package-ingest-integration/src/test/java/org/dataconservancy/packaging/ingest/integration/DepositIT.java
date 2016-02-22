@@ -7,17 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -31,54 +24,24 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
-import org.dataconservancy.packaging.ingest.camel.impl.EmailNotifications;
-import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
-import org.dataconservancy.packaging.ingest.camel.impl.config.FedoraConfig;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
-import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactoryConfig;
-import org.dataconservancy.packaging.impl.PackageFileProvenanceGenerator;
-import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
-import org.dataconservancy.packaging.ingest.camel.impl.CamelDepositManager;
-import org.dataconservancy.packaging.ingest.camel.impl.DefaultContextFactory;
-import org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver;
-import org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow;
-import org.dataconservancy.packaging.ingest.camel.impl.config.PackageFileDepositWorkflowConfig;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+
+import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 
 import static org.dataconservancy.packaging.ingest.camel.DepositWorkflow.HEADER_PROVENANCE_LOCATION;
 import static org.dataconservancy.packaging.ingest.camel.DepositWorkflow.HEADER_RESOURCE_LOCATIONS;
 
 import static org.dataconservancy.packaging.ingest.camel.Helpers.headerString;
 
-public class DepositIT {
+public abstract class DepositIT {
 
     List<Exchange> success = new ArrayList<>();
 
     List<Exchange> fail = new ArrayList<>();
-
-    private CamelDepositManager mgr;
-
-    static String PACKAGE_DEPOSIT_DIR = System
-            .getProperty("package.deposit.dir",
-                         new File("target/package/deposit").getAbsolutePath());
-
-    static String PACKAGE_FAIL_DIR = System
-            .getProperty("package.fail.dir",
-                         new File("target/package/fail").getAbsolutePath());
-
-    static String PACKAGE_EXTRACT_DIR = System
-            .getProperty("package.extract.dir",
-                         new File("target/package/extract").getAbsolutePath());
-
-    static String FEDORA_BASEURI = System
-            .getProperty("fedora.baseuri", "http://localhost:8080/fcrepo/rest");
 
     private final HttpClient client =
             HttpClientBuilder.create().setMaxConnPerRoute(Integer.MAX_VALUE)
@@ -86,26 +49,27 @@ public class DepositIT {
 
     @Before
     public void setUp() throws Exception {
-        wire();
+
         fail.clear();
         success.clear();
-        FileUtils.cleanDirectory(new File(PACKAGE_DEPOSIT_DIR));
-        FileUtils.cleanDirectory(new File(PACKAGE_FAIL_DIR));
-        FileUtils.cleanDirectory(new File(PACKAGE_EXTRACT_DIR));
-    }
 
-    @After
-    public void tearDown() throws Exception {
-        mgr.shutDown();
+        for (DepositLocation loc : getDepositLocations()) {
+            if (loc.depositDir.exists())
+                FileUtils.cleanDirectory(loc.depositDir);
+            if (loc.failDir.exists()) {
+                FileUtils.cleanDirectory(loc.failDir);
+            };
+        }
+
     }
 
     /* Verifies that failed packages go into fail older */
     @Test
     public void failureTest() throws Exception {
-        Path depositDir = Paths.get(PACKAGE_DEPOSIT_DIR);
-        Path failDir = Paths.get(PACKAGE_FAIL_DIR);
+        DepositLocation location = getDepositLocations().get(0);
+
         File created =
-                copyResource("/packages/badPackage.zip", depositDir.toFile());
+                copyResource("/packages/badPackage.zip", location.depositDir);
 
         long start = new Date().getTime();
 
@@ -115,13 +79,13 @@ public class DepositIT {
         }
 
         /* Package directory should be empty */
-        assertEquals(0, depositDir.toFile().list().length);
+        assertEquals(0, location.depositDir.list().length);
 
         /* Fail directory should now have one package in it */
-        assertEquals(1, failDir.toFile().list().length);
-        
+        assertEquals(1, location.failDir.list().length);
+
         /* Extract directory should be empty */
-        assertEquals(0, new File(PACKAGE_EXTRACT_DIR).list().length);
+        assertEquals(0, getExtractLocation().list().length);
 
         assertEquals(0, success.size());
         assertEquals(1, fail.size());
@@ -132,9 +96,10 @@ public class DepositIT {
     @Test
     public void projectDepositTest() throws Exception {
 
-        File dir = new File(PACKAGE_DEPOSIT_DIR);
+        DepositLocation location = getDepositLocations().get(0);
 
-        File created = copyResource("/packages/project1.zip", dir);
+        File created =
+                copyResource("/packages/project1.zip", location.depositDir);
 
         long start = new Date().getTime();
 
@@ -143,13 +108,13 @@ public class DepositIT {
         }
 
         /* Package directory should be empty now */
-        assertEquals(0, dir.list().length);
+        assertEquals(0, location.depositDir.list().length);
 
         /* Nothing in failure dir */
-        assertEquals(0, new File(PACKAGE_FAIL_DIR).list().length);
-        
+        assertEquals(0, location.failDir.list().length);
+
         /* Extract directory should be empty */
-        assertEquals(0, new File(PACKAGE_EXTRACT_DIR).list().length);
+        assertEquals(0, getExtractLocation().list().length);
 
         assertEquals(0, fail.size());
         assertEquals(1, success.size());
@@ -193,9 +158,9 @@ public class DepositIT {
 
     @Test
     public void depositFullPackageTest() throws Exception {
-        File dir = new File(PACKAGE_DEPOSIT_DIR);
-
-        File created = copyResource("/packages/test-package.zip", dir);
+        DepositLocation location = getDepositLocations().get(0);
+        File created =
+                copyResource("/packages/test-package.zip", location.depositDir);
 
         long start = new Date().getTime();
 
@@ -217,9 +182,9 @@ public class DepositIT {
                         .getIn().getHeader(HEADER_RESOURCE_LOCATIONS,
                                            Collection.class)));
         assertEquals(1, locations.size());
-        
+
         /* Extract directory should be empty */
-        assertEquals(0, new File(PACKAGE_EXTRACT_DIR).list().length);
+        assertEquals(0, getExtractLocation().list().length);
     }
 
     private File copyResource(String path, File file) throws IOException {
@@ -233,189 +198,46 @@ public class DepositIT {
         return outFile;
     }
 
-    protected void wire() {
+    protected static class DepositLocation {
 
-        FedoraConfig fedoraConfig = new FedoraConfig() {
+        public File depositDir;
 
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return FedoraConfig.class;
-            }
+        public File failDir;
 
-            @Override
-            public String fedora_baseuri() {
-                return FEDORA_BASEURI;
-            }
-        };
+        public String repositoryURI;
 
-        EmailNotificationsConfig emailConfig = new EmailNotificationsConfig() {
-            @Override
-            public String mail_smtpHost() {
-                return "localhost";
-            }
+        public DepositLocation withDepositDir(Object depositDir) {
+            this.depositDir = new File((String) depositDir);
+            return this;
+        }
 
-            @Override
-            public String mail_smtpUser() {
-                return "fooSmtpUser";
-            }
+        public DepositLocation withFailDir(Object failDir) {
+            this.failDir = new File((String) failDir);
+            return this;
+        }
 
-            @Override
-            public String mail_smtpPass() {
-                return "barSmtpPass";
-            }
-
-            @Override
-            public String mail_to() {
-                return "user@remoteHost";
-            }
-
-            @Override
-            public String mail_smtpPort() {
-                return EmailNotificationsConfig.DEFAULT_SMTP_PORT;
-            }
-
-            @Override
-            public String mail_from() {
-                return EmailNotificationsConfig.DEFAULT_SENDER;
-            }
-
-            @Override
-            public String mail_template() {
-                return EmailNotificationsConfig.DEFAULT_SUCCESS_TEMPLATE;
-            }
-
-            @Override
-            public String mail_subjectSuccess() {
-                return EmailNotificationsConfig.DEFAULT_SUCCESS_NOTIFICATION_SUBJECT;
-            }
-
-            @Override
-            public String mail_subjectFailure() {
-                return EmailNotificationsConfig.DEFAULT_FAILURE_NOTIFICATION_SUBJECT;
-            }
-
-            @Override
-            public String mail_debug() {
-                return EmailNotificationsConfig.DEFAULT_DEBUG;
-            }
-
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return EmailNotificationsConfig.class;
-            }
-        };
-
-        PackageFileAnalyzerFactoryConfig analyzerConfig =
-                new PackageFileAnalyzerFactoryConfig() {
-
-                    @Override
-                    public Class<? extends Annotation> annotationType() {
-                        return PackageFileAnalyzerFactoryConfig.class;
-                    }
-
-                    @Override
-                    public String package_extract_dir() {
-                        return PACKAGE_EXTRACT_DIR;
-                    }
-                };
-
-        PackageFileDepositWorkflowConfig workflowConfig =
-                new PackageFileDepositWorkflowConfig() {
-
-                    @Override
-                    public Class<? extends Annotation> annotationType() {
-                        return PackageFileDepositWorkflowConfig.class;
-                    }
-
-                    @Override
-                    public int package_poll_interval_ms() {
-                        return 1000;
-                    }
-
-                    @Override
-                    public String package_fail_dir() {
-                        return PACKAGE_FAIL_DIR;
-                    }
-
-                    @Override
-                    public String package_deposit_dir() {
-                        return PACKAGE_DEPOSIT_DIR;
-                    }
-
-                    @Override
-                    public String deposit_location() {
-                        return FEDORA_BASEURI;
-                    }
-
-                    @Override
-                    public boolean create_directories() {
-                        return true;
-                    }
-                };
-
-        FedoraDepositDriver driver = new FedoraDepositDriver();
-        driver.init(fedoraConfig);
-
-        PackageFileAnalyzerFactory analyzerFactory =
-                new PackageFileAnalyzerFactory();
-        analyzerFactory.init(analyzerConfig);
-
-        driver.setPackageAnalyzerFactory(analyzerFactory);
-        driver.setPackageProvenanceGenerator(new PackageFileProvenanceGenerator());
-
-        PackageFileDepositWorkflow rootDeposit =
-                new PackageFileDepositWorkflow();
-
-        rootDeposit.init(workflowConfig);
-
-        mgr = new CamelDepositManager();
-        mgr.setContextFactory(new DefaultContextFactory());
-        mgr.setDepositDriver(driver, asMap(fedoraConfig));
-        mgr.setNotificationDriver(new NotificationProbe(), asMap(emailConfig));
-        mgr.addDepositWorkflow(rootDeposit, asMap(workflowConfig));
-
-        mgr.init();
+        public DepositLocation withRepositoryURI(Object uri) {
+            this.repositoryURI = (String) uri;
+            return this;
+        }
     }
 
-    private class NotificationProbe
+    protected abstract List<DepositLocation> getDepositLocations();
+
+    protected abstract File getExtractLocation();
+
+    protected class NotificationProbe
             extends RouteBuilder
             implements NotificationDriver {
 
         @Override
         public void configure() throws Exception {
-
-            EmailNotifications emailNotifications = new EmailNotifications();
-
-            emailNotifications.getRouteCollection()
-                    // TODO: Review
-                    // I'm not sure if this is the best way to do this, because if the
-                    // intercept occurs at the beginning of the route, the list of successful
-                    // exchanges is populated before the 'ROUTE_NOTIFICATION_SUCCESS' is executed.
-                    //
-                    // So the presence of an Exchange in the 'success' or 'fail' bucket should not
-                    // be interpreted as "the EmailNotifications route executed properly".
-                    .interceptSendToEndpoint(NotificationDriver.ROUTE_NOTIFICATION_SUCCESS)
+            from(ROUTE_NOTIFICATION_SUCCESS)
                     .process(e -> success.add(e.copy()));
 
-            emailNotifications.getRouteCollection()
-                    .interceptSendToEndpoint(NotificationDriver.ROUTE_NOTIFICATION_FAIL)
-                    .process(e -> fail.add(e.copy()));
+            from(ROUTE_NOTIFICATION_FAIL).process(e -> fail.add(e.copy()));
 
-            emailNotifications.addRoutesToCamelContext(getContext());
-        }
-    }
-
-    private Map<String, Object> asMap(Annotation config) {
-        Map<String, Object> props = new HashMap<>();
-        for (Method m : config.annotationType().getMethods()) {
-            try {
-                if (m.getParameterCount() == 0)
-                    props.put(m.getName().replace('_', '.'), m.invoke(config));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
         }
 
-        return props;
     }
 }
