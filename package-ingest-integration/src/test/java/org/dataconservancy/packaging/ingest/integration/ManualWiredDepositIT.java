@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
@@ -25,6 +26,7 @@ import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotifications
 import org.dataconservancy.packaging.ingest.camel.impl.config.FedoraConfig;
 import org.dataconservancy.packaging.ingest.camel.impl.config.PackageFileDepositWorkflowConfig;
 
+/** Runs the DepositIT locally, with manual wiring */
 public class ManualWiredDepositIT
         extends DepositIT {
 
@@ -221,6 +223,63 @@ public class ManualWiredDepositIT
         }
 
         return props;
+    }
+
+    @Override
+    protected String getRepositoryBaseURI() {
+        return FEDORA_BASEURI;
+    }
+
+    @Override
+    protected DepositLocation newDepositLocationFor(String uri) {
+        File depositDir = new File("target/package/deposit",
+                                   UUID.randomUUID().toString());
+        DepositLocation location = new DepositLocation().withRepositoryURI(uri)
+                .withDepositDir(depositDir.toString())
+                .withFailDir(new File(depositDir, "fail").toString());
+
+        PackageFileDepositWorkflowConfig workflowConfig =
+                new PackageFileDepositWorkflowConfig() {
+
+                    @Override
+                    public Class<? extends Annotation> annotationType() {
+                        return PackageFileDepositWorkflowConfig.class;
+                    }
+
+                    @Override
+                    public int package_poll_interval_ms() {
+                        return 1000;
+                    }
+
+                    @Override
+                    public String package_fail_dir() {
+                        return location.failDir.toString();
+                    }
+
+                    @Override
+                    public String package_deposit_dir() {
+                        return location.depositDir.toString();
+                    }
+
+                    @Override
+                    public String deposit_location() {
+                        return location.repositoryURI;
+                    }
+
+                    @Override
+                    public boolean create_directories() {
+                        return true;
+                    }
+                };
+
+        PackageFileDepositWorkflow wf = new PackageFileDepositWorkflow();
+        wf.init(workflowConfig);
+
+        mgr.shutDown();
+        mgr.addDepositWorkflow(wf, asMap(workflowConfig));
+        mgr.init();
+
+        return location;
     }
 
 }

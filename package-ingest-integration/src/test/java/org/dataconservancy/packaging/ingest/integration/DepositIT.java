@@ -3,6 +3,7 @@ package org.dataconservancy.packaging.ingest.integration;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,10 +23,13 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -39,9 +43,15 @@ import static org.dataconservancy.packaging.ingest.camel.Helpers.headerString;
 
 public abstract class DepositIT {
 
+    @Rule
+    public TestName name = new TestName();
+
     List<Exchange> success = new ArrayList<>();
 
     List<Exchange> fail = new ArrayList<>();
+
+    static final FilenameFilter ignoreFailDir =
+            ((dir, name) -> !name.equals("fail"));
 
     private final HttpClient client =
             HttpClientBuilder.create().setMaxConnPerRoute(Integer.MAX_VALUE)
@@ -61,12 +71,18 @@ public abstract class DepositIT {
             };
         }
 
+        File extractLocation = getExtractLocation();
+
+        if (extractLocation.exists()) {
+            FileUtils.cleanDirectory(extractLocation);
+        }
+
     }
 
     /* Verifies that failed packages go into fail older */
     @Test
     public void failureTest() throws Exception {
-        DepositLocation location = getDepositLocations().get(0);
+        DepositLocation location = newDepositLocation();
 
         File created =
                 copyResource("/packages/badPackage.zip", location.depositDir);
@@ -79,7 +95,7 @@ public abstract class DepositIT {
         }
 
         /* Package directory should be empty */
-        assertEquals(0, location.depositDir.list().length);
+        assertEquals(0, location.depositDir.list(ignoreFailDir).length);
 
         /* Fail directory should now have one package in it */
         assertEquals(1, location.failDir.list().length);
@@ -96,7 +112,7 @@ public abstract class DepositIT {
     @Test
     public void projectDepositTest() throws Exception {
 
-        DepositLocation location = getDepositLocations().get(0);
+        DepositLocation location = newDepositLocation();
 
         File created =
                 copyResource("/packages/project1.zip", location.depositDir);
@@ -108,7 +124,7 @@ public abstract class DepositIT {
         }
 
         /* Package directory should be empty now */
-        assertEquals(0, location.depositDir.list().length);
+        assertEquals(0, location.depositDir.list(ignoreFailDir).length);
 
         /* Nothing in failure dir */
         assertEquals(0, location.failDir.list().length);
@@ -158,7 +174,7 @@ public abstract class DepositIT {
 
     @Test
     public void depositFullPackageTest() throws Exception {
-        DepositLocation location = getDepositLocations().get(0);
+        DepositLocation location = newDepositLocation();
         File created =
                 copyResource("/packages/test-package.zip", location.depositDir);
 
@@ -189,9 +205,11 @@ public abstract class DepositIT {
 
     private File copyResource(String path, File file) throws IOException {
         File outFile = new File(file, new File(path).getName());
+        outFile.getParentFile().mkdirs();
 
         try (InputStream content = this.getClass().getResourceAsStream(path);
                 OutputStream out = new FileOutputStream(outFile)) {
+
             IOUtils.copy(content, out);
         }
 
@@ -222,8 +240,42 @@ public abstract class DepositIT {
         }
     }
 
+    /*
+     * Creates a new deposit location and a new container in Fedora, starts
+     * associated deposit workflow
+     */
+    protected DepositLocation newDepositLocation() {
+
+        try {
+            HttpPost post = new HttpPost(getRepositoryBaseURI());
+            post.setHeader("Slug", this.getClass().getSimpleName() + "."
+                    + name.getMethodName());
+            HttpResponse response = client.execute(post);
+
+            assertEquals(HttpStatus.SC_CREATED,
+                         response.getStatusLine().getStatusCode());
+
+            return newDepositLocationFor(response.getFirstHeader("Location")
+                    .getValue());
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /* Get the LDP/Fedora base URI */
+    protected abstract String getRepositoryBaseURI();
+
+    /*
+     * Creates a deposit directory which deposits to the given Fedora URI,
+     * starts associated workflow.
+     */
+    protected abstract DepositLocation newDepositLocationFor(String uri);
+
+    /* Get all known deposit locations */
     protected abstract List<DepositLocation> getDepositLocations();
 
+    /* Get the package extract location */
     protected abstract File getExtractLocation();
 
     protected class NotificationProbe
