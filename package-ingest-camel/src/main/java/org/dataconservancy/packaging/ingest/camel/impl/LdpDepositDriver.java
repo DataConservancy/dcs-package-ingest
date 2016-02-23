@@ -3,6 +3,8 @@ package org.dataconservancy.packaging.ingest.camel.impl;
 
 import java.io.File;
 
+import java.net.URLEncoder;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -141,12 +143,13 @@ public class LdpDepositDriver
                         .cleanUpExtractionDirectory());
 
         /* Initial setup for a series of subsequent LDP deposits */
-        from("direct:_setup_for_deposit").id("ldp-deposit-setup")
-                .setHeader(HEADER_ANALYZER,
-                           expression(e -> analyzerFactory.newAnalyzer()))
+        from("direct:_setup_for_deposit")
+                .id("ldp-deposit-setup").setHeader(HEADER_ANALYZER,
+                                                   expression(e -> analyzerFactory
+                                                           .newAnalyzer()))
                 .setHeader(Exchange.HTTP_METHOD, constant("POST"))
-                .setHeader(HEADER_BINARY_URIS, constant(new HashSet<>()))
-                .setHeader(HEADER_URI_MAP, constant(new HashMap<>()));
+                .setHeader(HEADER_BINARY_URIS, expression(e -> new HashSet<>()))
+                .setHeader(HEADER_URI_MAP, expression(e -> new HashMap<>()));
 
         from(ROUTE_DEPOSIT_PROVENANCE)
                 .setBody(expression(e -> provGen.generatePackageProvenance(
@@ -185,7 +188,10 @@ public class LdpDepositDriver
                                                       .aggregate(existing,
                                                                  deposited);
                                           })
-                .process(e -> e.getIn().setHeader(HEADER_LDP_RESOURCES, e.getIn().getBody(LdpResource.class).getChildren()))
+                .process(e -> e.getIn()
+                        .setHeader(HEADER_LDP_RESOURCES,
+                                   e.getIn().getBody(LdpResource.class)
+                                           .getChildren()))
                 .setHeader(HTTP_URI, header(LOCATION))
                 .to("direct:_deposit_iterate").end();
 
@@ -246,8 +252,22 @@ public class LdpDepositDriver
                 }));
 
         /* Sanitize headers and perform an HTTP operation */
-        from("direct:_do_http_op").id(ID_HTTP_OPERATION)
-                .to("direct:_sanitize_headers").to("http4:ldp-host");
+        from("direct:_do_http_op").id("ldp-http-setup")
+                .enrich("direct:_http", MERGE_HEADERS)
+                .process(CHECK_HTTP_RESPONSE);
+
+        from("direct:_http").id(ID_HTTP_OPERATION)
+                .removeHeaders("*",
+                               HTTP_URI,
+                               CONTENT_TYPE,
+                               Exchange.HTTP_METHOD,
+                               HttpHeaders.ACCEPT,
+                               HttpHeaders.AUTHORIZATION,
+                               HttpHeaders.CONTENT_ENCODING,
+                               HttpHeaders.IF_MATCH,
+                               "Content-Disposition",
+                               "Slug")
+                .to("http4:ldp-host?throwExceptionOnFailure=false");
 
         /*
          * Deposit a resources that describes another resource (indicated in LDP
@@ -269,9 +289,8 @@ public class LdpDepositDriver
                     e.getIn().setHeader(HTTP_URI, descriptionURI);
                     e.getIn().setBody(IOUtils
                             .toByteArray(description.getBody()));
-                }).process(REMAP_URIS)
-                .setHeader(HttpHeaders.IF_MATCH, header(HttpHeaders.ETAG))
-                .process(SparqlPatch.ADD).to("direct:_http_preserve_body");
+                }).process(REMAP_URIS).process(SparqlPatch.ADD)
+                .to("direct:_http_preserve_body");
 
         /* Retrieve the current turtle representation of an object */
         from("direct:_retrieveForUpdate").id("ldp-retrieve-for-update")
@@ -282,19 +301,6 @@ public class LdpDepositDriver
                 .onWhen(e -> e.getException(HttpOperationFailedException.class)
                         .getStatusCode() == 406)
                 .setBody(constant("")).end();
-
-        /* Strip all headers except for certain HTTP headers used in requests */
-        from("direct:_sanitize_headers").id("lsp-sanitize-headers")
-                .removeHeaders("*",
-                               HTTP_URI,
-                               CONTENT_TYPE,
-                               Exchange.HTTP_METHOD,
-                               HttpHeaders.ACCEPT,
-                               HttpHeaders.AUTHORIZATION,
-                               HttpHeaders.CONTENT_ENCODING,
-                               HttpHeaders.IF_MATCH,
-                               "Content-Disposition",
-                               "Slug");
 
         /* Remap original URIs to ldp URIs */
         from("direct:_do_update_uris").id("ldp-do-update-uris")
@@ -327,13 +333,42 @@ public class LdpDepositDriver
         Map<String, String> master = uriMap(orig);
 
         if (master != null) {
-            uriMap(newer)
-                    .forEach((k, v) -> master.merge(k, v, ((v1, v2) -> v1)));
+            uriMap(newer).entrySet().stream()
+                    .filter(entry -> entry.getValue() != null)
+                    .forEach(entry -> master.merge(entry.getKey(),
+                                                   entry.getValue(),
+                                                   ((v1, v2) -> v1)));
         } else {
             orig.getIn().setHeader(HEADER_URI_MAP, uriMap(newer));
         }
 
         return orig;
+    });
+
+    static final AggregationStrategy MERGE_HEADERS = ((req, resp) -> {
+        req.getIn().getHeaders().entrySet()
+                .forEach(e -> resp.getIn().setHeader(e.getKey(), e.getValue()));
+        return resp;
+    });
+
+    static final Processor CHECK_HTTP_RESPONSE = (e -> {
+        if (e.getIn().getHeader(Exchange.HTTP_RESPONSE_CODE) == null
+                || e.getIn().getHeader(Exchange.HTTP_RESPONSE_CODE,
+                                       Integer.class) > 204) {
+
+            throw new HttpOperationFailedException(e.getIn()
+                    .getHeader(Exchange.HTTP_URI, String.class),
+                                                   e.getIn()
+                                                           .getHeader(Exchange.HTTP_RESPONSE_CODE,
+                                                                      Integer.class),
+                                                   e.getIn()
+                                                           .getHeader(Exchange.HTTP_RESPONSE_TEXT,
+                                                                      String.class),
+                                                   null,
+                                                   new HashMap<String, String>(),
+                                                   e.getIn()
+                                                           .getBody(String.class));
+        }
     });
 
     static final Processor REMAP_URIS = (e -> {
@@ -400,10 +435,14 @@ public class LdpDepositDriver
 
         String name = new File(resource.getURI().getPath()).getName();
 
-        if (NONRDFSOURCE.equals(resource.getType())) {
-            return name;
-        } else {
-            return FilenameUtils.removeExtension(name);
+        if (!NONRDFSOURCE.equals(resource.getType())) {
+            name = FilenameUtils.removeExtension(name);
+        }
+
+        try {
+            return URLEncoder.encode(name, "UTF-8");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

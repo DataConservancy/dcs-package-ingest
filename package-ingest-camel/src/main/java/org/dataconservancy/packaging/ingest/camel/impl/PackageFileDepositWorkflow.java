@@ -86,7 +86,6 @@ public class PackageFileDepositWorkflow
         from("direct:deposit").id("deposit-workflow")
                 .setHeader(Exchange.HTTP_URI,
                            constant(config.deposit_location()))
-
                 .doTry().to(ROUTE_TRANSACTION_BEGIN).to(ROUTE_DEPOSIT_RESOURCES)
                 .enrich("direct:_deposit_provenance", (orig, prov) -> {
                     orig.getIn()
@@ -140,12 +139,11 @@ public class PackageFileDepositWorkflow
                 .to(String.format(
                                   "file:%s?autoCreate=true&keepLastModified=true",
                                   config.package_fail_dir()))
-                .doCatch(Exception.class)
-                .process(e -> e
-                        .getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
-                        .printStackTrace(System.err))
-                .throwException(new RuntimeException("Failed to copy fail file!"))
-                .end();
+                .doCatch(Exception.class).process(e -> {
+                    throw new RuntimeException("Could not copy failure file!",
+                                               e.getProperty(Exchange.EXCEPTION_CAUGHT,
+                                                             Exception.class));
+                }).end();
     }
 
 }

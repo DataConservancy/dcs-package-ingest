@@ -3,10 +3,14 @@ package org.dataconservancy.packaging.ingest.integration;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 
 import java.net.URI;
+import java.net.URL;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -140,6 +144,7 @@ public class KarafDepositIT
                 .withFailDir(props.get("package.fail.dir"));
     }
 
+    @Override
     protected File getExtractLocation() {
 
         try {
@@ -151,6 +156,26 @@ public class KarafDepositIT
         } catch (Exception e) {
             throw new RuntimeException();
         }
+
+    }
+
+    @Override
+    protected List<String> listResources(String path, FilenameFilter filter) {
+        List<String> names = new ArrayList<>();
+
+        Enumeration<URL> entries = cxt.getBundle()
+                .findEntries(new File(path).getParent(), null, false);
+        while (entries.hasMoreElements()) {
+            URL url = entries.nextElement();
+
+            String name = new File(url.getPath()).getName();
+
+            if (filter.accept(new File(path), name)) {
+                names.add(name);
+            }
+        }
+
+        return names;
 
     }
 

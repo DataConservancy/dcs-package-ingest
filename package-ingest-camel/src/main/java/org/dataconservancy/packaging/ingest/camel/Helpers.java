@@ -35,9 +35,17 @@ public class Helpers {
     public static <T> T getBodyAs(Exchange e, Class<T> type) {
         return e.getIn().getBody(type);
     }
-    
+
     public static <T> T getHeaderAs(Exchange e, String header, Class<T> type) {
         return e.getIn().getHeader(header, type);
+    }
+
+    public static String formatHeaders(Exchange e) {
+        StringBuilder headerString = new StringBuilder("{\n");
+        e.getIn().getHeaders().entrySet().forEach(entry -> headerString
+                .append(entry.getKey() + ": " + entry.getValue() + "\n"));
+        return headerString.append("\n}").toString();
+
     }
 
 }

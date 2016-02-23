@@ -4,7 +4,6 @@ package org.dataconservancy.packaging.ingest.integration;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -33,6 +32,7 @@ import org.junit.rules.TestName;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 
@@ -79,9 +79,12 @@ public abstract class DepositIT {
 
     }
 
-    /* Verifies that failed packages go into fail older */
+    /*
+     * Verifies that failures due to bad packages go into fail folder and cause
+     * appropriate notification
+     */
     @Test
-    public void failureTest() throws Exception {
+    public void badPackageTest() throws Exception {
         DepositLocation location = newDepositLocation();
 
         File created =
@@ -203,17 +206,85 @@ public abstract class DepositIT {
         assertEquals(0, getExtractLocation().list().length);
     }
 
-    private File copyResource(String path, File file) throws IOException {
-        File outFile = new File(file, new File(path).getName());
-        outFile.getParentFile().mkdirs();
+    /* Verifies graceful failure when the repository URI is unresolvable */
+    @Test
+    public void badRepositoryUriTest() throws Exception {
+        DepositLocation location =
+                newDepositLocationFor("http://bad.unresolvable.example.org");
 
-        try (InputStream content = this.getClass().getResourceAsStream(path);
-                OutputStream out = new FileOutputStream(outFile)) {
+        File created =
+                copyResource("/packages/project1.zip", location.depositDir);
 
-            IOUtils.copy(content, out);
+        long start = new Date().getTime();
+
+        /* Wait for the package file to disappear from the deposit dir */
+        while (created.exists() && new Date().getTime() - start < 30000) {
+            Thread.sleep(1000);
         }
 
-        return outFile;
+        /* Package directory should be empty */
+        assertEquals(0, location.depositDir.list(ignoreFailDir).length);
+
+        /* Fail directory should now have one package in it */
+        assertEquals(1, location.failDir.list().length);
+
+        /* Extract directory should be empty */
+        assertEquals(0, getExtractLocation().list().length);
+
+        assertEquals(0, success.size());
+        assertEquals(1, fail.size());
+    }
+
+    /*
+     * Catch-all test for depositing packages that have have caused problems in
+     * the past
+     */
+    @Test
+    public void problematicPackageTest() throws Exception {
+
+        DepositLocation location = newDepositLocation();
+        List<String> packageNames =
+                listResources("/problem-packages/README.txt",
+                              (dir, name) -> !name.endsWith(".txt"));
+
+        assertNotEquals(0, packageNames.size());
+
+        packageNames.forEach(n -> copyResource("/problem-packages/" + n,
+                                               location.depositDir));
+        long start = new Date().getTime();
+
+        while (location.depositDir.list(ignoreFailDir).length != 0
+                && new Date().getTime() - start < 30000) {
+            Thread.sleep(1000);
+        }
+
+        assertEquals(packageNames.size(), success.size());
+
+    }
+
+    /*
+     * List classpath resources in the directory containing a file at the given
+     * path
+     */
+    protected abstract List<String> listResources(String path,
+                                                  FilenameFilter filter);
+
+    private File copyResource(String path, File file) {
+        try {
+            File outFile = new File(file, new File(path).getName());
+            outFile.getParentFile().mkdirs();
+
+            try (InputStream content =
+                    this.getClass().getResourceAsStream(path);
+                    OutputStream out = new FileOutputStream(outFile)) {
+                
+                IOUtils.copy(content, out);
+            }
+
+            return outFile;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected static class DepositLocation {
@@ -285,11 +356,18 @@ public abstract class DepositIT {
         @Override
         public void configure() throws Exception {
             from(ROUTE_NOTIFICATION_SUCCESS)
+                    .process(e -> assertNotNull(headerString(e,
+                                                             HEADER_PROVENANCE_LOCATION)))
+                    .process(e -> assertNotNull(headerString(e,
+                                                             HEADER_RESOURCE_LOCATIONS)))
                     .process(e -> success.add(e.copy()));
 
-            from(ROUTE_NOTIFICATION_FAIL).process(e -> fail.add(e.copy()));
-
+            from(ROUTE_NOTIFICATION_FAIL)
+                    .process(e -> assertNotNull(e
+                            .getProperty(Exchange.EXCEPTION_CAUGHT)))
+                    .process(e -> assertNotNull(e.getIn()
+                            .getHeader(Exchange.FILE_NAME)))
+                    .process(e -> fail.add(e.copy()));
         }
-
     }
 }

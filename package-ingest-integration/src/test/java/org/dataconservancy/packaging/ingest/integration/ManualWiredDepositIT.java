@@ -2,9 +2,12 @@
 package org.dataconservancy.packaging.ingest.integration;
 
 import java.io.File;
+import java.io.FilenameFilter;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+
+import java.nio.file.Paths;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -209,6 +212,19 @@ public class ManualWiredDepositIT
     @Override
     protected File getExtractLocation() {
         return new File(PACKAGE_EXTRACT_DIR);
+    }
+
+    protected List<String> listResources(String path, FilenameFilter filter) {
+        try {
+            return Arrays.asList(Paths
+                    .get(this.getClass()
+                            .getResource("/problem-packages/README.txt")
+                            .toURI())
+                    .toFile().getParentFile()
+                    .list((dir, name) -> !name.endsWith(".txt")));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Map<String, Object> asMap(Annotation config) {
