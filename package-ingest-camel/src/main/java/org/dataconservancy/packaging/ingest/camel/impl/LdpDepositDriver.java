@@ -346,8 +346,11 @@ public class LdpDepositDriver
     });
 
     static final AggregationStrategy MERGE_HEADERS = ((req, resp) -> {
-        req.getIn().getHeaders().entrySet()
-                .forEach(e -> resp.getIn().setHeader(e.getKey(), e.getValue()));
+        HashMap<String, Object> headers =
+                new HashMap<>(req.getIn().getHeaders());
+        resp.getIn().getHeaders().entrySet()
+                .forEach(e -> headers.put(e.getKey(), e.getValue()));
+        resp.getIn().setHeaders(headers);
         return resp;
     });
 

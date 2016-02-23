@@ -254,10 +254,10 @@ public class LdpDepositDriverTest
                              .getProperty("ldp:contains")).toList().size());
 
         /* Make sure this child is the binary */
-        //assertEquals(uriMap.get(BINARY_RESOURCE_URI),
-        //             model.listObjectsOfProperty(model
-        //                     .getProperty("ldp:contains")).toList().get(0)
-        //                     .toString());
+        assertEquals(uriMap.get(BINARY_RESOURCE_URI),
+                     model.listObjectsOfProperty(model
+                             .getProperty("ldp:contains")).toList().get(0)
+                             .toString());
 
         /*
          * Make sure our test rel is still there, and that it points to the
