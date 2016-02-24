@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.dataconservancy.packaging.ingest.osgi.impl.OsgiContextFactory;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.ConfigurationManager;
 import org.ops4j.pax.exam.Option;
@@ -54,6 +55,8 @@ public interface KarafIT {
                         .useDeployFolder(false),
                 configureConsole().ignoreLocalConsole(),
                 logLevel(LogLevel.WARN),
+
+                configFile(OsgiContextFactory.class),
 
                 features(pkgKaraf, "package-ingest-karaf"),
                 features(camelRepo, "camel-test")};

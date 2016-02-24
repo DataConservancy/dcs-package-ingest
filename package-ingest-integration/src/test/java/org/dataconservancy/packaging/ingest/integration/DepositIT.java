@@ -269,20 +269,34 @@ public abstract class DepositIT {
 
     }
 
+    /*
+     * Verify that original package is still in deposit dir if it cannot be
+     * moved to fail dir
+     */
     @Test
     public void exceptionDuringFailTest() throws Exception {
-        DepositLocation location = newDepositLocation();
+        DepositLocation location =
+                newDepositLocationFor("http://bad.unresolvable.example.org");
 
         /* This will intentionally make the failure handling route fail */
         location.failDir.delete();
+        FileUtils.touch(location.failDir);
 
         copyResource("/packages/project1.zip", location.depositDir);
 
         long start = new Date().getTime();
 
-        while (fail.size() < 2 && new Date().getTime() - start < 30000) {
+        while (fail.size() == 0 & new Date().getTime() - start < 30000) {
             Thread.sleep(1000);
         }
+
+        /*
+         * Make sure we logged a failure, and have not removed the package from
+         * the deposit dir
+         */
+        assertEquals(1, fail.size());
+        assertTrue(location.depositDir.list(ignoreFailDir).length > 0);
+
     }
 
     /*

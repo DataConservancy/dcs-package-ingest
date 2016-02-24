@@ -15,14 +15,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.camel.CamelContext;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.spi.Registry;
+
 import org.junit.After;
 import org.junit.Before;
 
 import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
 import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactoryConfig;
 import org.dataconservancy.packaging.impl.PackageFileProvenanceGenerator;
+import org.dataconservancy.packaging.ingest.camel.ContextFactory;
 import org.dataconservancy.packaging.ingest.camel.impl.CamelDepositManager;
-import org.dataconservancy.packaging.ingest.camel.impl.DefaultContextFactory;
 import org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow;
 import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
@@ -188,7 +192,17 @@ public class ManualWiredDepositIT
         rootDeposit.init(workflowConfig);
 
         mgr = new CamelDepositManager();
-        mgr.setContextFactory(new DefaultContextFactory());
+        mgr.setContextFactory(new ContextFactory() {
+
+            @Override
+            public CamelContext newContext(String id, Registry registry) {
+                DefaultCamelContext cxt = new DefaultCamelContext(registry);
+                cxt.getShutdownStrategy().setTimeout(1);
+                cxt.setUseMDCLogging(true);
+                cxt.setUseBreadcrumb(true);
+                return cxt;
+            }
+        });
         mgr.setDepositDriver(driver, asMap(fedoraConfig));
         mgr.setNotificationDriver(new NotificationProbe(), asMap(emailConfig));
         mgr.addDepositWorkflow(rootDeposit, asMap(workflowConfig));
