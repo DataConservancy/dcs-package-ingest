@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -63,6 +65,10 @@ public abstract class DepositIT {
 
     @Rule
     public TestName name = new TestName();
+
+    private long timeout_ms =
+            Integer.valueOf(System.getProperty("deposit.timeout.seconds", "60"))
+                    * 1000;
 
     List<Exchange> success = new ArrayList<>();
 
@@ -111,6 +117,8 @@ public abstract class DepositIT {
         long start = new Date().getTime();
 
         /* Wait for the package file to disappear from the deposit dir */
+        waitFor(() -> !created.exists());
+
         while (created.exists() && new Date().getTime() - start < 30000) {
             Thread.sleep(1000);
         }
@@ -138,11 +146,7 @@ public abstract class DepositIT {
         File created =
                 copyResource("/packages/project1.zip", location.depositDir);
 
-        long start = new Date().getTime();
-
-        while (created.exists() && new Date().getTime() - start < 30000) {
-            Thread.sleep(1000);
-        }
+        waitFor(() -> !created.exists());
 
         /* Package directory should be empty now */
         assertEquals(0, location.depositDir.list(ignoreFailDir).length);
@@ -199,11 +203,7 @@ public abstract class DepositIT {
         File created =
                 copyResource("/packages/test-package.zip", location.depositDir);
 
-        long start = new Date().getTime();
-
-        while (created.exists() && new Date().getTime() - start < 30000) {
-            Thread.sleep(1000);
-        }
+        waitFor(() -> !created.exists());
 
         if (fail.size() > 0) {
             fail.get(0).getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
@@ -233,12 +233,7 @@ public abstract class DepositIT {
         File created =
                 copyResource("/packages/project1.zip", location.depositDir);
 
-        long start = new Date().getTime();
-
-        /* Wait for the package file to disappear from the deposit dir */
-        while (created.exists() && new Date().getTime() - start < 30000) {
-            Thread.sleep(1000);
-        }
+        waitFor(() -> !created.exists());
 
         /* Package directory should be empty */
         assertEquals(0, location.depositDir.list(ignoreFailDir).length);
@@ -272,12 +267,8 @@ public abstract class DepositIT {
 
         packageNames.forEach(n -> copyResource("/problem-packages/" + n,
                                                location.depositDir));
-        long start = new Date().getTime();
 
-        while (location.depositDir.list(ignoreFailDir).length != 0
-                && new Date().getTime() - start < 30000) {
-            Thread.sleep(1000);
-        }
+        waitFor(() -> location.depositDir.list(ignoreFailDir).length == 0);
 
         assertEquals(packageNames.size(), success.size());
 
@@ -298,12 +289,7 @@ public abstract class DepositIT {
 
         copyResource("/packages/project1.zip", location.depositDir);
 
-        long start = new Date().getTime();
-
-        while (fail.size() == 0 & new Date().getTime() - start < 30000) {
-            Thread.sleep(1000);
-        }
-
+        waitFor(() -> !fail.isEmpty());
         /*
          * Make sure we logged a failure, and have not removed the package from
          * the deposit dir
@@ -419,6 +405,16 @@ public abstract class DepositIT {
                     .process(e -> assertNotNull(e.getIn()
                             .getHeader(Exchange.FILE_NAME)))
                     .process(e -> fail.add(e.copy()));
+        }
+    }
+
+    private void waitFor(BooleanSupplier condition) throws Exception {
+        long started = new Date().getTime();
+        while (!condition.getAsBoolean()) {
+            if (new Date().getTime() - started > timeout_ms) {
+                throw new TimeoutException("Test timed out!");
+            }
+            Thread.sleep(500);
         }
     }
 }
