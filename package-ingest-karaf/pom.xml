@@ -49,6 +49,7 @@
           <installAllFeaturesByDefault>true</installAllFeaturesByDefault>
           <resolveDefinedRepositoriesRecursively>true</resolveDefinedRepositoriesRecursively>
           <karafVersion>4.0.4</karafVersion>
+          <resourcesDir>${project.build.directory}/maven-shared-archive-resources</resourcesDir>
         </configuration>
       </plugin>
     </plugins>
