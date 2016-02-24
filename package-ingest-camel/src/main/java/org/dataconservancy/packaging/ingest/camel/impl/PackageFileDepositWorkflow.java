@@ -1,18 +1,16 @@
 /*
  * Copyright 2016 Johns Hopkins University
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest.camel.impl;
 
 import java.io.File;
@@ -95,8 +93,9 @@ public class PackageFileDepositWorkflow
 
         /* Construct a camel endpoint URI for polling a specific file */
         String fileSourceURI =
-                String.format("file:%s?delete=true&readLock=changed&readLockCheckInterval=%d&readLockTimeout=600000",
+                String.format("file:%s?delete=true&moveFailed=%s&readLock=changed&readLockCheckInterval=%d&readLockTimeout=30000",
                               config.package_deposit_dir(),
+                              config.package_fail_dir(),
                               config.package_poll_interval_ms());
 
         /* Poll the file */
@@ -148,7 +147,7 @@ public class PackageFileDepositWorkflow
         /* Canonicalize */
         from("direct:_canonicalize_resources")
                 .setHeader(HEADER_RESOURCE_LOCATIONS,
-                        expression(e -> new ArrayList()))
+                           expression(e -> new ArrayList<>()))
                 .split(header(HEADER_LDP_RESOURCES), (orig, updated) -> {
                     if (orig == null) orig = updated;
                     orig.getIn()
@@ -175,7 +174,9 @@ public class PackageFileDepositWorkflow
          */
         from("direct:_handle_failed_deposit")
                 .to("direct:_notify_fail_or_log_error").to("direct:_rollback")
-                .to("direct:copy_failed_package_to_fail_dir").stop();
+                .process(e -> {
+                    throw new RuntimeException("Deposit failed", exception(e));
+                });
 
         /*
          * Notify of a failure, or log errors if that fails. Does not throw any
@@ -199,10 +200,6 @@ public class PackageFileDepositWorkflow
                         .warn("Failed rolling back transaction", exception(e)))
                 .end();
 
-        /*
-         * Copy package to failure directory, may throw an exception if this
-         * fails
-         */
         from("direct:copy_failed_package_to_fail_dir").id("deposit-fail")
                 .doTry()
                 .process(e -> e.getIn()

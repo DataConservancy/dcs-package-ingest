@@ -1,18 +1,16 @@
 /*
  * Copyright 2016 Johns Hopkins University
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * http://www.apache.org/licenses/LICENSE-2.0
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest.integration;
 
 import java.io.File;
@@ -66,7 +64,7 @@ public abstract class DepositIT {
     @Rule
     public TestName name = new TestName();
 
-    private long timeout_ms =
+    private static long timeout_ms =
             Integer.valueOf(System.getProperty("deposit.timeout.seconds", "60"))
                     * 1000;
 
@@ -111,27 +109,24 @@ public abstract class DepositIT {
     public void badPackageTest() throws Exception {
         DepositLocation location = newDepositLocation();
 
-        File created =
-                copyResource("/packages/badPackage.zip", location.depositDir);
+        assertTrue(!location.failDir.exists()
+                || location.failDir.list().length == 0);
 
-        long start = new Date().getTime();
+        copyResource("/packages/badPackage.zip", location.depositDir);
 
-        /* Wait for the package file to disappear from the deposit dir */
-        waitFor(() -> !created.exists());
-
-        while (created.exists() && new Date().getTime() - start < 30000) {
-            Thread.sleep(1000);
-        }
+        /* Wait for fail directory to get something in it */
+        waitFor(() -> fileCount(location.failDir) > 0);
 
         /* Package directory should be empty */
-        assertEquals(0, location.depositDir.list(ignoreFailDir).length);
+        assertEquals(0, fileCount(location.depositDir));
 
         /* Fail directory should now have one package in it */
-        assertEquals(1, location.failDir.list().length);
+        assertEquals(1, fileCount(location.failDir));
 
         /* Extract directory should be empty */
-        assertEquals(0, getExtractLocation().list().length);
+        assertEquals(0, fileCount(getExtractLocation()));
 
+        /* One failure notification */
         assertEquals(0, success.size());
         assertEquals(1, fail.size());
 
@@ -148,16 +143,17 @@ public abstract class DepositIT {
 
         waitFor(() -> !created.exists());
 
+        assertNoFailureMessages();
+
         /* Package directory should be empty now */
-        assertEquals(0, location.depositDir.list(ignoreFailDir).length);
+        assertEquals(0, fileCount(location.depositDir));
 
         /* Nothing in failure dir */
-        assertEquals(0, location.failDir.list().length);
+        assertEquals(0, fileCount(location.failDir));
 
         /* Extract directory should be empty */
-        assertEquals(0, getExtractLocation().list().length);
+        assertEquals(0, fileCount(getExtractLocation()));
 
-        assertEquals(0, fail.size());
         assertEquals(1, success.size());
 
         List<String> locations =
@@ -205,12 +201,7 @@ public abstract class DepositIT {
 
         waitFor(() -> !created.exists());
 
-        if (fail.size() > 0) {
-            fail.get(0).getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class)
-                    .printStackTrace(System.out);
-        }
-
-        assertEquals(0, fail.size());
+        assertNoFailureMessages();
         assertEquals(1, success.size());
 
         @SuppressWarnings("unchecked")
@@ -221,7 +212,7 @@ public abstract class DepositIT {
         assertEquals(1, locations.size());
 
         /* Extract directory should be empty */
-        assertEquals(0, getExtractLocation().list().length);
+        assertEquals(0, fileCount(getExtractLocation()));
     }
 
     /* Verifies graceful failure when the repository URI is unresolvable */
@@ -230,19 +221,18 @@ public abstract class DepositIT {
         DepositLocation location =
                 newDepositLocationFor("http://bad.unresolvable.example.org");
 
-        File created =
-                copyResource("/packages/project1.zip", location.depositDir);
+        assertTrue(!location.failDir.exists()
+                || location.failDir.list().length == 0);
 
-        waitFor(() -> !created.exists());
+        copyResource("/packages/project1.zip", location.depositDir);
+
+        waitFor(() -> fileCount(location.failDir) > 0);
 
         /* Package directory should be empty */
-        assertEquals(0, location.depositDir.list(ignoreFailDir).length);
-
-        /* Fail directory should now have one package in it */
-        assertEquals(1, location.failDir.list().length);
+        assertEquals(0, fileCount(location.depositDir));
 
         /* Extract directory should be empty */
-        assertEquals(0, getExtractLocation().list().length);
+        assertEquals(0, fileCount(getExtractLocation()));
 
         assertEquals(0, success.size());
         assertEquals(1, fail.size());
@@ -268,10 +258,13 @@ public abstract class DepositIT {
         packageNames.forEach(n -> copyResource("/problem-packages/" + n,
                                                location.depositDir));
 
-        waitFor(() -> location.depositDir.list(ignoreFailDir).length == 0);
+        waitFor(() -> fileCount(location.depositDir) == 0);
 
         assertEquals(packageNames.size(), success.size());
 
+        assertEquals(0, fileCount(location.failDir));
+
+        assertEquals(0, fileCount(getExtractLocation()));
     }
 
     /*
@@ -289,13 +282,14 @@ public abstract class DepositIT {
 
         copyResource("/packages/project1.zip", location.depositDir);
 
+        /* Wait for a notification */
         waitFor(() -> !fail.isEmpty());
+
         /*
          * Make sure we logged a failure, and have not removed the package from
          * the deposit dir
          */
-        assertEquals(1, fail.size());
-        assertTrue(location.depositDir.list(ignoreFailDir).length > 0);
+        assertTrue(fileCount(location.depositDir) > 0);
 
     }
 
@@ -333,12 +327,12 @@ public abstract class DepositIT {
         public String repositoryURI;
 
         public DepositLocation withDepositDir(Object depositDir) {
-            this.depositDir = new File((String) depositDir);
+            this.depositDir = new File((String) depositDir).getAbsoluteFile();
             return this;
         }
 
         public DepositLocation withFailDir(Object failDir) {
-            this.failDir = new File((String) failDir);
+            this.failDir = new File((String) failDir).getAbsoluteFile();
             return this;
         }
 
@@ -408,13 +402,25 @@ public abstract class DepositIT {
         }
     }
 
-    private void waitFor(BooleanSupplier condition) throws Exception {
+    private static void waitFor(BooleanSupplier condition) throws Exception {
         long started = new Date().getTime();
         while (!condition.getAsBoolean()) {
             if (new Date().getTime() - started > timeout_ms) {
                 throw new TimeoutException("Test timed out!");
             }
             Thread.sleep(500);
+        }
+    }
+
+    public static int fileCount(File dir) {
+        if (!dir.exists()) return 0;
+        return dir.list(ignoreFailDir).length;
+    }
+
+    public void assertNoFailureMessages() throws Exception {
+        if (fail.size() > 0) {
+            throw fail.get(0).getProperty(Exchange.EXCEPTION_CAUGHT,
+                                          Exception.class);
         }
     }
 }
