@@ -115,7 +115,7 @@ public class PackageFileDepositWorkflow
         /* Canonicalize */
         from("direct:_canonicalize_resources")
                 .setHeader(HEADER_RESOURCE_LOCATIONS,
-                           constant(new ArrayList<>()))
+                        expression(e -> new ArrayList()))
                 .split(header(HEADER_LDP_RESOURCES), (orig, updated) -> {
                     if (orig == null) orig = updated;
                     orig.getIn()
