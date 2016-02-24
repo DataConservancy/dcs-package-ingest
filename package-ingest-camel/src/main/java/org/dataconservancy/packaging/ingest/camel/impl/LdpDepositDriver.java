@@ -397,22 +397,6 @@ public class LdpDepositDriver
             (e -> uriMap(e).put(headerString(e, HEADER_ORIG_URI),
                                 headerString(e, HttpHeaders.LOCATION)));
 
-    /*
-     * Merges the RDF of two bodies
-     * Body: Serialized RDF
-     * Headers: CONTENT_TYPE, Location
-     */
-    //static final AggregationStrategy MERGE_RDF = ((orig, newer) -> {
-    //    Model model = ModelFactory.createDefaultModel();
-    //    StreamRDF sink = StreamRDFLib.graph(model.getGraph());
-
-    //  parseRDFBody(sink, orig);
-    //  parseRDFBody(sink, newer);
-    //  writeRDFBody(model, orig);
-
-    //  return orig;
-    //});
-
     /* Retrieve the uri map of a message */
     static Map<String, String> uriMap(Exchange e) {
         return e.getIn().getHeader(HEADER_URI_MAP, Map.class);

@@ -28,6 +28,10 @@ public class Helpers {
         }
     }
 
+    public static Throwable exception(Exchange e) {
+        return e.getProperty(Exchange.EXCEPTION_CAUGHT, Throwable.class);
+    }
+
     public static String headerString(Exchange e, String name) {
         return e.getIn().getHeader(name, String.class);
     }

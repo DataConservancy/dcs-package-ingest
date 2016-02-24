@@ -7,6 +7,8 @@ import java.io.FilenameFilter;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import java.net.UnknownHostException;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -33,12 +35,14 @@ import org.junit.rules.TestName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
 
 import static org.dataconservancy.packaging.ingest.camel.DepositWorkflow.HEADER_PROVENANCE_LOCATION;
 import static org.dataconservancy.packaging.ingest.camel.DepositWorkflow.HEADER_RESOURCE_LOCATIONS;
 
+import static org.apache.commons.lang.exception.ExceptionUtils.getRootCause;
 import static org.dataconservancy.packaging.ingest.camel.Helpers.headerString;
 
 public abstract class DepositIT {
@@ -233,6 +237,9 @@ public abstract class DepositIT {
 
         assertEquals(0, success.size());
         assertEquals(1, fail.size());
+        assertTrue(getRootCause(fail.get(0)
+                .getProperty(Exchange.EXCEPTION_CAUGHT,
+                             Exception.class)) instanceof UnknownHostException);
     }
 
     /*
@@ -262,6 +269,22 @@ public abstract class DepositIT {
 
     }
 
+    @Test
+    public void exceptionDuringFailTest() throws Exception {
+        DepositLocation location = newDepositLocation();
+
+        /* This will intentionally make the failure handling route fail */
+        location.failDir.delete();
+
+        copyResource("/packages/project1.zip", location.depositDir);
+
+        long start = new Date().getTime();
+
+        while (fail.size() < 2 && new Date().getTime() - start < 30000) {
+            Thread.sleep(1000);
+        }
+    }
+
     /*
      * List classpath resources in the directory containing a file at the given
      * path
@@ -277,7 +300,7 @@ public abstract class DepositIT {
             try (InputStream content =
                     this.getClass().getResourceAsStream(path);
                     OutputStream out = new FileOutputStream(outFile)) {
-                
+
                 IOUtils.copy(content, out);
             }
 
