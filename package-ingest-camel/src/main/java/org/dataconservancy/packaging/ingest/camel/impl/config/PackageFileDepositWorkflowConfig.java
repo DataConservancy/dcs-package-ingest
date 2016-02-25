@@ -22,6 +22,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @ObjectClassDefinition(name = "org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow", description = "Package file deposit workflow.  Monitors a ilesystem location for package files, deposits them to a single location.")
 public @interface PackageFileDepositWorkflowConfig {
 
+    static final int DEFAULT_POLL_INTERVAL_MS = 30000;
+
     @AttributeDefinition(description = "Attempt to create directories if not present")
     boolean create_directories() default true;
 
@@ -35,6 +37,9 @@ public @interface PackageFileDepositWorkflowConfig {
     String package_fail_dir();
 
     @AttributeDefinition(description = "Files that haven't changed size in this interval of time are considered 'complete' and will be processed")
-    int package_poll_interval_ms() default 30000;
+    int package_poll_interval_ms() default DEFAULT_POLL_INTERVAL_MS;
+
+    @AttributeDefinition(description = "Amount of time to wait before giving up on acquiring an exclusive lock on the package file.  Must be greater than the package poll interval.")
+    int package_read_log_timeout_ms() default (DEFAULT_POLL_INTERVAL_MS * 3);
 
 }

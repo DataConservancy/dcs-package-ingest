@@ -93,10 +93,11 @@ public class PackageFileDepositWorkflow
 
         /* Construct a camel endpoint URI for polling a specific file */
         String fileSourceURI =
-                String.format("file:%s?delete=true&moveFailed=%s&readLock=changed&readLockCheckInterval=%d&readLockTimeout=30000",
+                String.format("file:%s?delete=true&moveFailed=%s&readLock=changed&readLockCheckInterval=%d&readLockTimeout=%d",
                               config.package_deposit_dir(),
                               config.package_fail_dir(),
-                              config.package_poll_interval_ms());
+                              config.package_poll_interval_ms(),
+                              config.package_read_log_timeout_ms());
 
         /* Poll the file */
         from(fileSourceURI).id("deposit-poll-file")

@@ -183,6 +183,11 @@ public class ManualWiredDepositIT
                     }
 
                     @Override
+                    public int package_read_log_timeout_ms() {
+                        return 1000 * 3;
+                    }
+
+                    @Override
                     public boolean create_directories() {
                         return true;
                     }
@@ -306,6 +311,11 @@ public class ManualWiredDepositIT
                     @Override
                     public String deposit_location() {
                         return location.repositoryURI;
+                    }
+
+                    @Override
+                    public int package_read_log_timeout_ms() {
+                        return 1000 * 3;
                     }
 
                     @Override
