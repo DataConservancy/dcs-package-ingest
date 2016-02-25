@@ -183,7 +183,7 @@ public class ManualWiredDepositIT
                     }
 
                     @Override
-                    public int package_read_log_timeout_ms() {
+                    public int package_read_lock_timeout_ms() {
                         return 1000 * 3;
                     }
 
@@ -314,7 +314,7 @@ public class ManualWiredDepositIT
                     }
 
                     @Override
-                    public int package_read_log_timeout_ms() {
+                    public int package_read_lock_timeout_ms() {
                         return 1000 * 3;
                     }
 
