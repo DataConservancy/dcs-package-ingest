@@ -15,8 +15,6 @@
  */
 package org.dataconservancy.packaging.ingest.osgi.impl;
 
-import java.util.Map;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.core.osgi.OsgiCamelContextPublisher;
 import org.apache.camel.core.osgi.OsgiDefaultCamelContext;
@@ -52,7 +50,7 @@ public class OsgiContextFactory
 
     @Activate
     public void activate(BundleContext bundleContext,
-                         Map<String, Object> properties) {
+                         OsgiContextFactoryConfig cfg) {
         this.bundleContext = bundleContext;
         publisher = new OsgiCamelContextPublisher(bundleContext);
         try {
@@ -61,10 +59,7 @@ public class OsgiContextFactory
             throw new RuntimeException(e);
         }
 
-        if (properties.containsKey("context.shutdown.timeout")) {
-            timeout = Integer.valueOf((String) properties
-                    .get("context.shutdown.timeout"));
-        }
+        timeout = cfg.context_shutdown_timeout();
     }
 
     @Modified
