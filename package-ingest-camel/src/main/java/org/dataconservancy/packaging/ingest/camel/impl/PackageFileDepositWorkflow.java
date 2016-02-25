@@ -97,7 +97,7 @@ public class PackageFileDepositWorkflow
                               config.package_deposit_dir(),
                               config.package_fail_dir(),
                               config.package_poll_interval_ms(),
-                              config.package_read_lock_timeout_ms());
+                              3 * config.package_poll_interval_ms());
 
         /* Poll the file */
         from(fileSourceURI).id("deposit-poll-file")

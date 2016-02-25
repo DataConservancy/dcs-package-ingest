@@ -38,8 +38,4 @@ public @interface PackageFileDepositWorkflowConfig {
 
     @AttributeDefinition(description = "Files that haven't changed size in this interval of time are considered 'complete' and will be processed")
     int package_poll_interval_ms() default DEFAULT_POLL_INTERVAL_MS;
-
-    @AttributeDefinition(description = "Amount of time to wait before giving up on acquiring an exclusive lock on the package file.  Must be greater than the package poll interval.")
-    int package_read_lock_timeout_ms() default (DEFAULT_POLL_INTERVAL_MS * 3);
-
 }
