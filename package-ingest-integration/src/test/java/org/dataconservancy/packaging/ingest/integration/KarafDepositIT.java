@@ -122,17 +122,18 @@ public class KarafDepositIT
 
             String id = UUID.randomUUID().toString();
 
-            File depositDir = new File(
-                                       (String) cxt
-                                               .getServiceReferences(DepositWorkflow.class,
-                                                                     "(test.role=root)")
-                                               .iterator().next()
-                                               .getProperty("package.deposit.dir"),
-                                       id);
+            File depositRoot = new File(
+                                        (String) cxt
+                                                .getServiceReferences(DepositWorkflow.class,
+                                                                      "(test.role=root)")
+                                                .iterator().next()
+                                                .getProperty("package.deposit.dir"),
+                                        id);
 
-            props.put("package.deposit.dir", depositDir.toString());
+            props.put("package.deposit.dir",
+                      new File(depositRoot, "deposit").toString());
             props.put("package.fail.dir",
-                      new File(depositDir, "fail").toString());
+                      new File(depositRoot, "fail").toString());
 
             /* Put a configuration file in /etc to create new workflow */
             File installFile = new File(

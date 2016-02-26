@@ -51,13 +51,15 @@ public class ManualWiredDepositIT
 
     CamelDepositManager mgr;
 
-    static String PACKAGE_DEPOSIT_DIR = System
-            .getProperty("package.deposit.dir",
-                         new File("target/package/deposit").getAbsolutePath());
+    static String PACKAGE_DEPOSIT_DIR =
+            System.getProperty("package.deposit.dir",
+                               new File("target/package/root/deposit")
+                                       .getAbsolutePath());
 
-    static String PACKAGE_FAIL_DIR = System
-            .getProperty("package.fail.dir",
-                         new File("target/package/fail").getAbsolutePath());
+    static String PACKAGE_FAIL_DIR =
+            System.getProperty("package.fail.dir",
+                               new File("target/package/root/fail")
+                                       .getAbsolutePath());
 
     static String PACKAGE_EXTRACT_DIR = System
             .getProperty("package.extract.dir",
@@ -274,11 +276,13 @@ public class ManualWiredDepositIT
 
     @Override
     protected DepositLocation newDepositLocationFor(String uri) {
-        File depositDir = new File("target/package/deposit",
-                                   UUID.randomUUID().toString());
-        DepositLocation location = new DepositLocation().withRepositoryURI(uri)
-                .withDepositDir(depositDir.toString())
-                .withFailDir(new File(depositDir, "fail").toString());
+        File depositRoot = new File("target/package/deposit",
+                                    UUID.randomUUID().toString());
+        DepositLocation location =
+                new DepositLocation().withRepositoryURI(uri)
+                        .withDepositDir(new File(depositRoot, "deposit")
+                                .toString())
+                        .withFailDir(new File(depositRoot, "fail").toString());
 
         PackageFileDepositWorkflowConfig workflowConfig =
                 new PackageFileDepositWorkflowConfig() {
