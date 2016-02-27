@@ -46,6 +46,16 @@
       <groupId>org.dataconservancy.packaging</groupId>
       <artifactId>package-ingest-camel</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>jaxb-core</artifactId>
+          <groupId>com.sun.xml.bind</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jaxb-impl</artifactId>
+          <groupId>com.sun.xml.bind</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -73,6 +83,16 @@
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-core-osgi</artifactId>
       <version>${camel.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>jaxb-core</artifactId>
+          <groupId>com.sun.xml.bind</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jaxb-impl</artifactId>
+          <groupId>com.sun.xml.bind</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
   </dependencies>
