@@ -44,7 +44,8 @@ import org.slf4j.LoggerFactory;
  *
  * @see EmailNotificationsConfig
  */
-@Component(service = NotificationDriver.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Component(service = NotificationDriver.class, configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true, property = {
+"service.ranking=1"})
 @Designate(ocd = EmailNotificationsConfig.class)
 public class EmailNotifications
         extends RouteBuilder

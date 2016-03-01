@@ -1,6 +1,5 @@
 /*
  * Copyright 2016 Johns Hopkins University
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,7 +34,8 @@ import static org.dataconservancy.packaging.ingest.camel.DepositWorkflow.HEADER_
 }
 
 @Designate(ocd = LoggerNotificationsConfig.class)
-@Component(configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
+@Component(configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true, property = {
+        "service.ranking=-1"})
 public class LoggerNotifications
         extends RouteBuilder
         implements NotificationDriver {

@@ -72,7 +72,7 @@ public class CamelDepositManager implements DepositManager {
 		this.deposit = driver;
 	}
 
-	@Reference(cardinality = ReferenceCardinality.MANDATORY)
+	@Reference(cardinality = ReferenceCardinality.MANDATORY, policyOption = ReferencePolicyOption.GREEDY)
 	public void setNotificationDriver(NotificationDriver driver, Map<String, Object> props) {
         updateProperties(globalProperties, props);
         this.notification = driver;
