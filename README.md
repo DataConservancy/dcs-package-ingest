@@ -23,11 +23,26 @@ This is a description of the package ingest service
  - Oracle JDK 8
  - Apache Karaf 4.0+
  
+### Operation
+The simple package ingest service will monitor specified directories for the presence of 
+[Data conservancy packages](http://dataconservancy.github.io/dc-packaging-spec/dc-packaging-spec-1.0.html). 
+When packages are found, their contents are [ingested into a Fedora repository](https://docs.google.com/document/d/1709hcmO_lxUqDvCYKQuJ3XUvaywQFSxFGkt98EWvGRs).  This package ingest service
+places additional semantics on Data Conservancy packages which influence how artifacts within them are ingested into Fedora.  In particular, it looks for additional statements in the [resource manifest file](http://dataconservancy.github.io/dc-packaging-spec/dc-packaging-spec-1.0.html#a3.2.3):
+* Any resource `R` that is the subject of a statement `<R> <rdf:type> <ldp:Container>` will be created as a Container in Fedora
+* For resources `R` and `C`, a statement `<R> <ldp:Contains> <C>` will result in `C` being ingested as member of the 
+corresponding `R` container in Fedora.
+* For any resource `R` that logically describes a resource `B`, and `B` is a binary resource (i.e not a domain object), 
+presence of the statement `<R> <iana:describes> <B>` will result in B deposited as a NonRDFSource in Fedora, with the contents of `R` placed into the associated LDP-RS automatically created by Fedora as described in [§5.2.3.12](https://www.w3.org/TR/ldp/#h-ldpc-post-createbinlinkmetahdr) of the LDP specification.
+
+Addditionally, Fedora places its own restrictions on object content, such as a restriction that all triples in an object MUST have the same subject, inless that subject is a blank node.  All domain objects (indicated by `ore:aggregates` in the manifest file) will be ingested as Fedora objects, and therefore subject so such restrictions.
+ 
 ### Installation in Karaf ###
 See [Karaf install instructions](package-ingest-karaf/README.md).  
 
 ### Configuration ###
 See [Karaf configuration instructions](package-ingest-karaf/README.md#Configuration)
+
+
 ## Development ##
 
 ### Integration testing ###
