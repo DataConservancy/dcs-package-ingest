@@ -123,7 +123,7 @@ public class LdpDepositDriverTest
         when(parent.getChildren()).thenReturn(Arrays.asList(child1, child2));
         when(child2.getChildren()).thenReturn(Arrays.asList(child3));
 
-        String ORIG_BODY = "body";
+        LdpResource ORIG_BODY = parent;
         String TEST_HEADER = "test.header";
         String TEST_HEADER_VALUE = "test.header.value";
 
