@@ -215,6 +215,35 @@ public abstract class DepositIT {
         assertEquals(0, fileCount(getExtractLocation()));
     }
 
+    /**
+     * Tests the deposit of a package which has multiple objects in the package without a parent.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void depositFlatPackageTest() throws Exception {
+        DepositLocation location = newDepositLocation();
+        File created =
+                copyResource("/packages/flat-package.tar", location.depositDir);
+
+        waitFor(() -> !created.exists());
+
+        assertNoFailureMessages();
+        assertEquals(1, success.size());
+
+        @SuppressWarnings("unchecked")
+        List<String> locations =
+                new ArrayList<>(((Collection<String>) success.get(0)
+                        .getIn().getHeader(HEADER_RESOURCE_LOCATIONS,
+                                Collection.class)));
+
+        // There are 9 objects in the package without a parent
+        assertEquals(9, locations.size());
+
+        /* Extract directory should be empty */
+        assertEquals(0, fileCount(getExtractLocation()));
+    }
+
     /* Verifies graceful failure when the repository URI is unresolvable */
     @Test
     public void badRepositoryUriTest() throws Exception {
