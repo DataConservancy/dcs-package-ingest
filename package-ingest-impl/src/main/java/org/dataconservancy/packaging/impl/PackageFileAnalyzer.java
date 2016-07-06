@@ -105,6 +105,20 @@ public class PackageFileAnalyzer
                             }
                         }
                     }
+
+                    // process any remaining binary resources:
+                    //   these are resources that are the object of iana:describes, and are not the object of an ldp:contains.
+                    remModel.listStatements(null, DESCRIBES_PROPERTY, (String)null)
+                            .filterDrop(statement -> remModel.contains(null, LDP_CONTAINS, statement.getObject()))
+                            .forEachRemaining(statement -> {
+                                try {
+                                    LdpResource binaryResource = populateFileResource(statement.getObject().asResource(), extractDir.toPath(), remModel);
+                                    packageContainerResources.put(binaryResource.getURI(), binaryResource);
+                                } catch (URISyntaxException | IOException e) {
+                                    throw new RuntimeException("Error processing non-container binary resources: " + e.getMessage(), e);
+                                }
+                            });
+
                 }
             } catch (URISyntaxException | IOException e) {
                 throw new RuntimeException("An error occurred reading the package Resource map. " + e.getMessage());
