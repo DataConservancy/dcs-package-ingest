@@ -190,8 +190,7 @@ public class LdpDepositDriver
          * Headers: HEADER_LDP_RESOURCES: Collection<LdpResource>
          */
         from("direct:_deposit_iterate").id(ID_DEPOSIT_ITERATE)
-                .split(header(HEADER_LDP_RESOURCES), MERGE_URI_MAP)
-                .stopOnException().enrich("direct:_deposit_ldpResource",
+                .enrich("direct:_deposit_ldpResource",
                                           (existing, deposited) -> {
                                               existing.getIn()
                                                       .setHeader(LOCATION,
@@ -207,6 +206,7 @@ public class LdpDepositDriver
                                    e.getIn().getBody(LdpResource.class)
                                            .getChildren()))
                 .setHeader(HTTP_URI, header(LOCATION))
+                .split(header(HEADER_LDP_RESOURCES), MERGE_URI_MAP).stopOnException()
                 .to("direct:_deposit_iterate").end();
 
         /*
