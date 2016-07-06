@@ -4,7 +4,7 @@
         ore:describes  <#Aggregation> .
 
 <#Aggregation>  a       ore:Aggregation ;
-        ore:aggregates  <bag://test_pkg/data/obj/curl/out.txt.ttl> , <bag://test_pkg/data/obj/curl/out.ttl> , <bag://test_pkg/data/obj/curl/log.txt.ttl> , <bag://test_pkg/data/obj/curl/LICENSE.ttl> , <bag://test_pkg/data/obj/curl.ttl> .
+        ore:aggregates  <bag://test_pkg/data/obj/curl/out.txt.ttl> , <bag://test_pkg/data/obj/curl/out.ttl> , <bag://test_pkg/data/obj/curl/log.txt.ttl> , <bag://test_pkg/data/obj/curl/LICENSE.ttl> , <bag://test_pkg/data/obj/curl.ttl> , <bag://test_pkg/data/obj/curl/NoParent.ttl> .
 
 <bag://test_pkg/data/obj/curl/log.txt.ttl>
         <http://www.iana.org/assignments/relation/describes>
@@ -25,3 +25,8 @@
 <bag://test_pkg/data/obj/curl/LICENSE.ttl>
         <http://www.iana.org/assignments/relation/describes>
                 <bag://test_pkg/data/bin/curl/LICENSE> .
+
+# NoParent is a domain object that does not have a parent container.
+<bag://test_pkg/data/obj/curl/NoParent.ttl>
+        <http://www.iana.org/assignments/relation/describes>
+                <bag://test_pkg/data/bin/curl/NoParent.txt> .

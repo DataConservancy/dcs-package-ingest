@@ -1,0 +1,1 @@
+This should be recognized as a LDP non-RDF source.  The domain object that describes this file does not have a parent.

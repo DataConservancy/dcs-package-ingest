@@ -17,7 +17,6 @@ package org.dataconservancy.packaging.impl;
 
 import org.dataconservancy.packaging.ingest.LdpResource;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -28,6 +27,7 @@ import java.net.URL;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -36,6 +36,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class PackageFileAnalyzerTest {
+
+    private static final URI EXPECTED_ROOT_URI = URI.create("bag://test_pkg/data/obj/curl.ttl");
+
+    private static final URI EXPECTED_ORPHAN_BINARY_URI = URI.create("bag://test_pkg/data/bin/curl/NoParent.txt");
 
     private PackageFileAnalyzer underTest;
     private File testPackage;
@@ -58,10 +62,11 @@ public class PackageFileAnalyzerTest {
         //Doesn't matter what file we pass here since we're mocking the open package code.
         Collection<LdpResource> packageResources = underTest.getContainerRoots(testPackage);
 
-        assertEquals(1, packageResources.size());
+        // The root container, and a binary that has no container
+        assertEquals(2, packageResources.size());
 
-        LdpResource rootResource = packageResources.iterator().next();
-        assertEquals(new URI("bag://test_pkg/data/obj/curl.ttl"), rootResource.getURI());
+        LdpResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
+        assertEquals(EXPECTED_ROOT_URI, rootResource.getURI());
         assertEquals(TURTLE_MEDIA_TYPE, rootResource.getMediaType());
         assertEquals(LdpResource.Type.CONTAINER, rootResource.getType());
         assertNotNull(rootResource.getBody());
@@ -75,9 +80,10 @@ public class PackageFileAnalyzerTest {
         //Doesn't matter what file we pass here since we're mocking the open package code.
         Collection<LdpResource> packageResources = underTest.getContainerRoots(testPackage);
 
-        assertEquals(1, packageResources.size());
+        // The root container, and a binary that has no container
+        assertEquals(2, packageResources.size());
 
-        LdpResource rootResource = packageResources.iterator().next();
+        LdpResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
         assertNotNull(rootResource);
 
         boolean emptyCollectionChecked = false;
@@ -101,9 +107,10 @@ public class PackageFileAnalyzerTest {
         //Doesn't matter what file we pass here since we're mocking the open package code.
         Collection<LdpResource> packageResources = underTest.getContainerRoots(testPackage);
 
-        assertEquals(1, packageResources.size());
+        // The root container, and a binary that has no container
+        assertEquals(2, packageResources.size());
 
-        LdpResource rootResource = packageResources.iterator().next();
+        LdpResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
         assertNotNull(rootResource);
 
         boolean fileChecked = false;
@@ -128,5 +135,50 @@ public class PackageFileAnalyzerTest {
         }
 
         assertTrue(fileChecked);
+    }
+
+    /**
+     * Insures that the binary resource that has no container is properly processed
+     * @throws Exception
+     */
+    @Test
+    public void testBinaryResourceNoContainer() throws Exception {
+        //Doesn't matter what file we pass here since we're mocking the open package code.
+        Collection<LdpResource> packageResources = underTest.getContainerRoots(testPackage);
+
+        // The root container, and a binary that has no container
+        assertEquals(2, packageResources.size());
+
+        LdpResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
+        assertNotNull(rootResource);
+
+        // Assert that the orphan is present in the packaged resources
+        LdpResource orphan = get(EXPECTED_ORPHAN_BINARY_URI, packageResources);
+        assertNotNull(orphan);
+
+        // Assert that the type of the resource is non-RDF
+        assertEquals(LdpResource.Type.NONRDFSOURCE, orphan.getType());
+
+        // Assert that this resource is not contained by any other resource
+        // the orphan URI should only be present once, for the orphan itself.
+        assertFalse(packageResources
+                .stream()
+                // Exclude the orphan resource itself
+                .filter(resource -> !resource.getURI().equals(EXPECTED_ORPHAN_BINARY_URI))
+                // Flatten all the children
+                .flatMap(resource -> resource.getChildren().stream())
+                // See if the orphan's URI is present on any of the resources
+                .anyMatch(resource -> resource.getURI().equals(EXPECTED_ORPHAN_BINARY_URI)));
+    }
+
+    /**
+     * Obtain the identified LDPResource from the collection of resources, or null.
+     *
+     * @param resourceUri
+     * @param resources
+     * @return
+     */
+    LdpResource get(URI resourceUri, Collection<LdpResource> resources) {
+        return resources.stream().filter(r -> r.getURI().equals(resourceUri)).findFirst().get();
     }
 }
