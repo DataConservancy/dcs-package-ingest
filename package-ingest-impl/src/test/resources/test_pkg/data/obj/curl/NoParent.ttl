@@ -1,0 +1,9 @@
+@prefix bom:   <http://dataconservancy.org/business-object-model#> .
+
+<bag://test_pkg/data/bin/curl/NoParent.txt>
+        a                    bom:Metadata ;
+        bom:hasCreateDate    "2016-07-06T17:04:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+        bom:hasFormat        "text/plain" ;
+        bom:hasCreateDate    "2016-07-06T17:04:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> ;
+        bom:hasSize          "118"^^<http://www.w3.org/2001/XMLSchema#long> ;
+        bom:hasTitle         "NoParent" .

@@ -244,6 +244,40 @@ public abstract class DepositIT {
         assertEquals(0, fileCount(getExtractLocation()));
     }
 
+    /**
+     * Insures that a package containing a binary object that has no parent is properly ingested.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void depositFlatPackageWithBinariesTest() throws Exception {
+        DepositLocation location = newDepositLocation();
+        File created =
+                copyResource("/packages/flat-package-with-binary.tar", location.depositDir);
+
+        waitFor(() -> !created.exists());
+
+        assertNoFailureMessages();
+        assertEquals(1, success.size());
+
+        @SuppressWarnings("unchecked")
+        List<String> locations =
+                new ArrayList<>(((Collection<String>) success.get(0)
+                        .getIn().getHeader(HEADER_RESOURCE_LOCATIONS,
+                                Collection.class)));
+
+        // There are 8 objects in the package without a parent
+        assertEquals(8, locations.size());
+
+        // One of them should be the binary
+        assertTrue(locations.stream().anyMatch(l -> l.endsWith("osfstorage_porsche_2.jpg")));
+
+
+
+        /* Extract directory should be empty */
+        assertEquals(0, fileCount(getExtractLocation()));
+    }
+
     /* Verifies graceful failure when the repository URI is unresolvable */
     @Test
     public void badRepositoryUriTest() throws Exception {
