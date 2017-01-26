@@ -19,7 +19,7 @@ import java.util.Map;
 
 public interface LdpPackageProvenanceGenerator<T> {
 
-    LdpResource generatePackageProvenance(T pkg,
+    PackagedResource generatePackageProvenance(T pkg,
                                           Map<String, String> uriMapping);
 
 }

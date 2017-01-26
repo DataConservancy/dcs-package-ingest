@@ -44,7 +44,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
 
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
-import org.dataconservancy.packaging.ingest.LdpResource;
+import org.dataconservancy.packaging.ingest.PackagedResource;
 
 import static org.dataconservancy.packaging.impl.UriUtility.resolveBagUri;
 
@@ -75,8 +75,8 @@ public class PackageFileAnalyzer
     }
     
     @Override
-    public Collection<LdpResource> getContainerRoots(File pkg) {
-        Map<URI, LdpResource> packageContainerResources = new HashMap<>();
+    public Collection<PackagedResource> getContainerRoots(File pkg) {
+        Map<URI, PackagedResource> packageContainerResources = new HashMap<>();
         List<URI> visitedChildContainers = new ArrayList<>();
         try {
             extractedPackageLocation = packageService.openPackage(extractDir, pkg);
@@ -100,7 +100,7 @@ public class PackageFileAnalyzer
                         while (nodeIterator.hasNext()) {
                             Resource containerResource = nodeIterator.next();
                             if (!visitedChildContainers.contains(new URI(containerResource.getURI()))) {
-                                LdpResource newContainer = populateLdpContainerResource(remModel, containerResource, visitedChildContainers, extractDir.toPath());
+                                PackagedResource newContainer = populateLdpContainerResource(remModel, containerResource, visitedChildContainers, extractDir.toPath());
                                 packageContainerResources.put(newContainer.getURI(), newContainer);
                             }
                         }
@@ -112,7 +112,7 @@ public class PackageFileAnalyzer
                             .filterDrop(statement -> remModel.contains(null, LDP_CONTAINS, statement.getObject()))
                             .forEachRemaining(statement -> {
                                 try {
-                                    LdpResource binaryResource = populateFileResource(statement.getObject().asResource(), extractDir.toPath(), remModel);
+                                    PackagedResource binaryResource = populateFileResource(statement.getObject().asResource(), extractDir.toPath(), remModel);
                                     packageContainerResources.put(binaryResource.getURI(), binaryResource);
                                 } catch (URISyntaxException | IOException e) {
                                     throw new RuntimeException("Error processing non-container binary resources: " + e.getMessage(), e);
@@ -137,11 +137,11 @@ public class PackageFileAnalyzer
     }
 
     //Parses out information from the ReM needed to populate LdpContainerResources.
-    private LdpResource populateLdpContainerResource(Model model, Resource ldpContainerResource, List<URI> visitedContainerResources, Path extractDirectory)
+    private PackagedResource populateLdpContainerResource(Model model, Resource ldpContainerResource, List<URI> visitedContainerResources, Path extractDirectory)
         throws URISyntaxException, IOException {
         URI resourceBagUri = new URI(ldpContainerResource.getURI());
         BasicLdpResource resource = new BasicLdpResource(resourceBagUri);
-        resource.setType(LdpResource.Type.CONTAINER);
+        resource.setType(PackagedResource.Type.CONTAINER);
 
         Path resourcePath = UriUtility.resolveBagUri(extractDirectory, resourceBagUri);
         resource.setMediaType(getDomainObjectMimeType(resourcePath));
@@ -157,7 +157,7 @@ public class PackageFileAnalyzer
                     if (!childResource.hasProperty(TYPE, model.getResource(LDP_CONTAINER))) {
                         resource.addChild(populateFileResource(childResource, extractDirectory, model));
                     } else {
-                        LdpResource childContainer = populateLdpContainerResource(model, childResource, visitedContainerResources, extractDirectory);
+                        PackagedResource childContainer = populateLdpContainerResource(model, childResource, visitedContainerResources, extractDirectory);
                         resource.addChild(childContainer);
                         visitedContainerResources.add(childContainer.getURI());
                     }
@@ -172,13 +172,13 @@ public class PackageFileAnalyzer
 
     //Parses out file resource information to craft appropriate ldp resource objects.
     //This will return the non rdf resource which will have the rdf resource set as it's description
-    private LdpResource populateFileResource(Resource fileResource, Path extractDirectory, Model model)
+    private PackagedResource populateFileResource(Resource fileResource, Path extractDirectory, Model model)
         throws URISyntaxException, IOException {
 
         //Handle the domain object first, then we'll get the binary content it describes.
         URI binaryFileURI = new URI(fileResource.getURI());
         BasicLdpResource binaryFileResource = new BasicLdpResource(binaryFileURI);
-        binaryFileResource.setType(LdpResource.Type.NONRDFSOURCE);
+        binaryFileResource.setType(PackagedResource.Type.NONRDFSOURCE);
 
         Path resourcePath = UriUtility.resolveBagUri(extractDirectory, binaryFileURI);
         String mimeType = Files.probeContentType(resourcePath);
@@ -198,7 +198,7 @@ public class PackageFileAnalyzer
             Resource domainObject = nodeIterator.next();
             URI domainObjectURI = new URI(domainObject.getURI());
             domainObjectResource = new BasicLdpResource(domainObjectURI);
-            domainObjectResource.setType(LdpResource.Type.RDFSOURCE);
+            domainObjectResource.setType(PackagedResource.Type.RDFSOURCE);
             binaryFileResource.setDescription(domainObjectResource);
 
             Path domainObjectResourcePath = UriUtility.resolveBagUri(extractDirectory, domainObjectURI);

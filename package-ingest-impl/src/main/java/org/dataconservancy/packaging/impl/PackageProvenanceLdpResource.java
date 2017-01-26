@@ -15,20 +15,20 @@
  */
 package org.dataconservancy.packaging.impl;
 
-import org.dataconservancy.packaging.ingest.LdpResource;
+import org.dataconservancy.packaging.ingest.PackagedResource;
 
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 
-class PackageProvenanceLdpResource implements LdpResource {
+class PackageProvenanceLdpResource implements PackagedResource {
 
     private URI uri;
     private Type type;
     private InputStream content;
     private String mediaType;
-    private LdpResource domainObjectDescription;
+    private PackagedResource domainObjectDescription;
 
     PackageProvenanceLdpResource(URI uri) {
         this.uri = uri;
@@ -49,7 +49,7 @@ class PackageProvenanceLdpResource implements LdpResource {
     }
 
     @Override
-    public Collection<LdpResource> getChildren() {
+    public Collection<PackagedResource> getChildren() {
         return new ArrayList<>();
     }
 
@@ -72,11 +72,11 @@ class PackageProvenanceLdpResource implements LdpResource {
     }
 
     @Override
-    public LdpResource getDescription() {
+    public PackagedResource getDescription() {
         return domainObjectDescription;
     }
 
-    void setDescription(LdpResource description) {
+    void setDescription(PackagedResource description) {
         this.domainObjectDescription = description;
     }
 }

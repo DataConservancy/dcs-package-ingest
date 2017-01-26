@@ -22,7 +22,7 @@ import java.net.URI;
 import java.util.Collection;
 
 /** Describes a package resource in terms of LDP semantics */
-public interface LdpResource {
+public interface PackagedResource {
 
     /** LDP Resource type */
     public Type getType();
@@ -31,7 +31,7 @@ public interface LdpResource {
     public URI getURI();
 
     /** If a container, these are the children. If there are no children and empty list will be returned, but never null. */
-    public Collection<LdpResource> getChildren();
+    public Collection<PackagedResource> getChildren();
 
     /** Body of the LDP Resource, if RDF, presumed to be utf-8 encoded */
     public InputStream getBody();
@@ -43,7 +43,7 @@ public interface LdpResource {
      * If this is a NonRdfSource, there may be a descriptinve RDFSource
      * containing its metadata.
      */
-    public LdpResource getDescription();
+    public PackagedResource getDescription();
 
     /** LDP resource type */
     public enum Type {

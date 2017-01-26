@@ -15,21 +15,21 @@
  */
 package org.dataconservancy.packaging.impl;
 
-import org.dataconservancy.packaging.ingest.LdpResource;
+import org.dataconservancy.packaging.ingest.PackagedResource;
 
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class BasicLdpResource implements LdpResource {
+public class BasicLdpResource implements PackagedResource {
 
     private URI uri;
     private Type type;
-    private Collection<LdpResource> children;
+    private Collection<PackagedResource> children;
     private InputStream content;
     private String mediaType;
-    private LdpResource domainObjectDescription;
+    private PackagedResource domainObjectDescription;
 
     public BasicLdpResource(URI uri) {
         this.uri = uri;
@@ -50,7 +50,7 @@ public class BasicLdpResource implements LdpResource {
         return uri;
     }
 
-    public void addChild(LdpResource child) {
+    public void addChild(PackagedResource child) {
         if (children == null) {
             children = new ArrayList<>();
         }
@@ -59,11 +59,11 @@ public class BasicLdpResource implements LdpResource {
     }
 
     @Override
-    public Collection<LdpResource> getChildren() {
+    public Collection<PackagedResource> getChildren() {
         return children;
     }
 
-    public void setChildren(Collection<LdpResource> children) {
+    public void setChildren(Collection<PackagedResource> children) {
         this.children = children;
     }
 
@@ -86,11 +86,11 @@ public class BasicLdpResource implements LdpResource {
     }
 
     @Override
-    public LdpResource getDescription() {
+    public PackagedResource getDescription() {
         return domainObjectDescription;
     }
 
-    public void setDescription(LdpResource description) {
+    public void setDescription(PackagedResource description) {
         this.domainObjectDescription = description;
     }
 }

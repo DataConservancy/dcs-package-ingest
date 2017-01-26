@@ -15,7 +15,7 @@
  */
 package org.dataconservancy.packaging.impl;
 
-import org.dataconservancy.packaging.ingest.LdpResource;
+import org.dataconservancy.packaging.ingest.PackagedResource;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -60,15 +60,15 @@ public class PackageFileAnalyzerTest {
     @Test
     public void testPackageAnalyzer() throws URISyntaxException {
         //Doesn't matter what file we pass here since we're mocking the open package code.
-        Collection<LdpResource> packageResources = underTest.getContainerRoots(testPackage);
+        Collection<PackagedResource> packageResources = underTest.getContainerRoots(testPackage);
 
         // The root container, and a binary that has no container
         assertEquals(2, packageResources.size());
 
-        LdpResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
+        PackagedResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
         assertEquals(EXPECTED_ROOT_URI, rootResource.getURI());
         assertEquals(TURTLE_MEDIA_TYPE, rootResource.getMediaType());
-        assertEquals(LdpResource.Type.CONTAINER, rootResource.getType());
+        assertEquals(PackagedResource.Type.CONTAINER, rootResource.getType());
         assertNotNull(rootResource.getBody());
         assertNull(rootResource.getDescription());
 
@@ -78,18 +78,18 @@ public class PackageFileAnalyzerTest {
     @Test
     public void testEmptyContainer() throws URISyntaxException {
         //Doesn't matter what file we pass here since we're mocking the open package code.
-        Collection<LdpResource> packageResources = underTest.getContainerRoots(testPackage);
+        Collection<PackagedResource> packageResources = underTest.getContainerRoots(testPackage);
 
         // The root container, and a binary that has no container
         assertEquals(2, packageResources.size());
 
-        LdpResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
+        PackagedResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
         assertNotNull(rootResource);
 
         boolean emptyCollectionChecked = false;
-        for (LdpResource child : rootResource.getChildren()) {
+        for (PackagedResource child : rootResource.getChildren()) {
             if (child.getURI().equals(new URI("bag://test_pkg/data/obj/curl/out.ttl"))) {
-                assertEquals(LdpResource.Type.CONTAINER, child.getType());
+                assertEquals(PackagedResource.Type.CONTAINER, child.getType());
 
                 assertEquals(TURTLE_MEDIA_TYPE, child.getMediaType());
                 assertTrue(child.getChildren().isEmpty());
@@ -105,25 +105,25 @@ public class PackageFileAnalyzerTest {
     @Test
     public void testFileResource() throws URISyntaxException {
         //Doesn't matter what file we pass here since we're mocking the open package code.
-        Collection<LdpResource> packageResources = underTest.getContainerRoots(testPackage);
+        Collection<PackagedResource> packageResources = underTest.getContainerRoots(testPackage);
 
         // The root container, and a binary that has no container
         assertEquals(2, packageResources.size());
 
-        LdpResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
+        PackagedResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
         assertNotNull(rootResource);
 
         boolean fileChecked = false;
-        for (LdpResource child : rootResource.getChildren()) {
+        for (PackagedResource child : rootResource.getChildren()) {
             if (child.getURI().equals(new URI("bag://test_pkg/data/bin/curl/log.txt"))) {
-                assertEquals(LdpResource.Type.NONRDFSOURCE, child.getType());
+                assertEquals(PackagedResource.Type.NONRDFSOURCE, child.getType());
                 assertEquals("text/plain", child.getMediaType());
                 assertTrue(child.getChildren().isEmpty());
                 assertNotNull(child.getBody());
                 assertNotNull(child.getDescription());
-                LdpResource childRdf = child.getDescription();
+                PackagedResource childRdf = child.getDescription();
 
-                assertEquals(LdpResource.Type.RDFSOURCE, childRdf.getType());
+                assertEquals(PackagedResource.Type.RDFSOURCE, childRdf.getType());
                 assertEquals(new URI("bag://test_pkg/data/obj/curl/log.txt.ttl"), childRdf.getURI());
                 assertEquals(TURTLE_MEDIA_TYPE, childRdf.getMediaType());
                 assertNotNull(childRdf.getBody());
@@ -144,20 +144,20 @@ public class PackageFileAnalyzerTest {
     @Test
     public void testBinaryResourceNoContainer() throws Exception {
         //Doesn't matter what file we pass here since we're mocking the open package code.
-        Collection<LdpResource> packageResources = underTest.getContainerRoots(testPackage);
+        Collection<PackagedResource> packageResources = underTest.getContainerRoots(testPackage);
 
         // The root container, and a binary that has no container
         assertEquals(2, packageResources.size());
 
-        LdpResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
+        PackagedResource rootResource = get(EXPECTED_ROOT_URI, packageResources);
         assertNotNull(rootResource);
 
         // Assert that the orphan is present in the packaged resources
-        LdpResource orphan = get(EXPECTED_ORPHAN_BINARY_URI, packageResources);
+        PackagedResource orphan = get(EXPECTED_ORPHAN_BINARY_URI, packageResources);
         assertNotNull(orphan);
 
         // Assert that the type of the resource is non-RDF
-        assertEquals(LdpResource.Type.NONRDFSOURCE, orphan.getType());
+        assertEquals(PackagedResource.Type.NONRDFSOURCE, orphan.getType());
 
         // Assert that this resource is not contained by any other resource
         // the orphan URI should only be present once, for the orphan itself.
@@ -178,7 +178,7 @@ public class PackageFileAnalyzerTest {
      * @param resources
      * @return
      */
-    LdpResource get(URI resourceUri, Collection<LdpResource> resources) {
+    PackagedResource get(URI resourceUri, Collection<PackagedResource> resources) {
         return resources.stream().filter(r -> r.getURI().equals(resourceUri)).findFirst().get();
     }
 }
