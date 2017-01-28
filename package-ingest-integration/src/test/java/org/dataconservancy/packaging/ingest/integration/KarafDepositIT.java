@@ -13,13 +13,13 @@
 
 package org.dataconservancy.packaging.ingest.integration;
 
+import static org.dataconservancy.packaging.ingest.integration.KarafIT.configFile;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
-
 import java.net.URI;
 import java.net.URL;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -31,16 +31,15 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import org.junit.Before;
-import org.junit.runner.RunWith;
-
 import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
+import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
-import org.dataconservancy.packaging.ingest.camel.DepositDriver;
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
-import org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver;
 import org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow;
+
+import org.junit.Before;
+import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
@@ -48,8 +47,6 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
-
-import static org.dataconservancy.packaging.ingest.integration.KarafIT.configFile;
 
 /** Runs the DepositIT tests in Karaf, with OSGi providing the wiring */
 @RunWith(PaxExam.class)
@@ -66,8 +63,7 @@ public class KarafDepositIT
     @Override
     public List<Option> additionalKarafConfig() {
         return Arrays
-                .asList(configFile(FedoraDepositDriver.class),
-                        configFile(PackageFileAnalyzerFactory.class),
+                .asList(configFile(PackageFileAnalyzerFactory.class),
                         configFile(PackageFileDepositWorkflow.class, "test"));
     }
 
@@ -75,10 +71,11 @@ public class KarafDepositIT
     public void addNotification() {
 
         cxt.registerService(NotificationDriver.class,
-                            new NotificationProbe(),
-                            null);
+                new NotificationProbe(),
+                null);
     }
 
+    @Override
     protected List<DepositLocation> getDepositLocations() {
 
         try {
@@ -90,65 +87,67 @@ public class KarafDepositIT
                             .withRepositoryURI(props.get("deposit.location")))
                     .collect(Collectors.toList());
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
 
     }
 
+    @Override
     protected String getRepositoryBaseURI() {
         try {
             return (String) cm
                     .getConfiguration((String) cxt
-                            .getServiceReference(DepositDriver.class)
+                            .getServiceReference(Depositor.class)
                             .getProperty(Constants.SERVICE_PID))
                     .getProperties().get("fedora.baseuri");
-            //cxt.getServiceReferences(DepositWorkflow.class, "(test.role=root)").iterator().next().getProperty("deposit.location");
+            // cxt.getServiceReferences(DepositWorkflow.class,
+            // "(test.role=root)").iterator().next().getProperty("deposit.location");
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    @Override
     protected DepositLocation newDepositLocationFor(String uri) {
 
-        //Dictionary<String, Object> props = new Hashtable<>();
-        Properties props = new Properties();
+        // Dictionary<String, Object> props = new Hashtable<>();
+        final Properties props = new Properties();
         props.put("create.directories", "true");
         props.put("deposit.location", uri);
         props.put("package.poll.interval.ms", "1000");
 
         try {
 
-            String id = UUID.randomUUID().toString();
+            final String id = UUID.randomUUID().toString();
 
-            File depositRoot = new File(
-                                        (String) cxt
-                                                .getServiceReferences(DepositWorkflow.class,
-                                                                      "(test.role=root)")
-                                                .iterator().next()
-                                                .getProperty("package.deposit.dir"),
-                                        id);
+            final File depositRoot = new File(
+                    (String) cxt
+                            .getServiceReferences(DepositWorkflow.class,
+                                    "(test.role=root)")
+                            .iterator().next()
+                            .getProperty("package.deposit.dir"),
+                    id);
 
             props.put("package.deposit.dir",
-                      new File(depositRoot, "deposit").toString());
+                    new File(depositRoot, "deposit").toString());
             props.put("package.fail.dir",
-                      new File(depositRoot, "fail").toString());
+                    new File(depositRoot, "fail").toString());
 
             /* Put a configuration file in /etc to create new workflow */
-            File installFile = new File(
-                                        new File(URI.create((String) cxt
-                                                .getServiceReferences(DepositWorkflow.class,
-                                                                      "(felix.fileinstall.filename=*)")
-                                                .iterator().next()
-                                                .getProperty("felix.fileinstall.filename")))
-                                                        .getParentFile(),
-                                        "org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow-"
-                                                + id + ".cfg");
+            final File installFile = new File(
+                    new File(URI.create((String) cxt
+                            .getServiceReferences(DepositWorkflow.class,
+                                    "(felix.fileinstall.filename=*)")
+                            .iterator().next()
+                            .getProperty("felix.fileinstall.filename")))
+                                    .getParentFile(),
+                    "org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow-" + id + ".cfg");
 
             props.store(new FileOutputStream(installFile), "");
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -167,7 +166,7 @@ public class KarafDepositIT
                             .getProperty(Constants.SERVICE_PID))
                     .getProperties().get("package.extract.dir"))
                             .getAbsoluteFile();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException();
         }
 
@@ -175,14 +174,14 @@ public class KarafDepositIT
 
     @Override
     protected List<String> listResources(String path, FilenameFilter filter) {
-        List<String> names = new ArrayList<>();
+        final List<String> names = new ArrayList<>();
 
-        Enumeration<URL> entries = cxt.getBundle()
+        final Enumeration<URL> entries = cxt.getBundle()
                 .findEntries(new File(path).getParent(), null, false);
         while (entries.hasMoreElements()) {
-            URL url = entries.nextElement();
+            final URL url = entries.nextElement();
 
-            String name = new File(url.getPath()).getName();
+            final String name = new File(url.getPath()).getName();
 
             if (filter.accept(new File(path), name)) {
                 names.add(name);
@@ -198,7 +197,7 @@ public class KarafDepositIT
                 try {
                     return cm.getConfiguration((String) sr
                             .getProperty(Constants.SERVICE_PID));
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     throw new RuntimeException(e);
                 }
             });

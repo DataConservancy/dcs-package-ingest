@@ -15,35 +15,28 @@ package org.dataconservancy.packaging.ingest.integration;
 
 import java.io.File;
 import java.io.FilenameFilter;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-
 import java.nio.file.Paths;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
+import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactoryConfig;
+import org.dataconservancy.packaging.ingest.camel.ContextFactory;
+import org.dataconservancy.packaging.ingest.camel.impl.CamelDepositManager;
+import org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow;
+import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
+import org.dataconservancy.packaging.ingest.camel.impl.config.PackageFileDepositWorkflowConfig;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.spi.Registry;
-
 import org.junit.After;
 import org.junit.Before;
-
-import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
-import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactoryConfig;
-import org.dataconservancy.packaging.impl.PackageFileProvenanceGenerator;
-import org.dataconservancy.packaging.ingest.camel.ContextFactory;
-import org.dataconservancy.packaging.ingest.camel.impl.CamelDepositManager;
-import org.dataconservancy.packaging.ingest.camel.impl.FedoraDepositDriver;
-import org.dataconservancy.packaging.ingest.camel.impl.PackageFileDepositWorkflow;
-import org.dataconservancy.packaging.ingest.camel.impl.config.EmailNotificationsConfig;
-import org.dataconservancy.packaging.ingest.camel.impl.config.FedoraConfig;
-import org.dataconservancy.packaging.ingest.camel.impl.config.PackageFileDepositWorkflowConfig;
 
 /** Runs the DepositIT locally, with manual wiring */
 public class ManualWiredDepositIT
@@ -53,17 +46,17 @@ public class ManualWiredDepositIT
 
     static String PACKAGE_DEPOSIT_DIR =
             System.getProperty("package.deposit.dir",
-                               new File("target/package/root/deposit")
-                                       .getAbsolutePath());
+                    new File("target/package/root/deposit")
+                            .getAbsolutePath());
 
     static String PACKAGE_FAIL_DIR =
             System.getProperty("package.fail.dir",
-                               new File("target/package/root/fail")
-                                       .getAbsolutePath());
+                    new File("target/package/root/fail")
+                            .getAbsolutePath());
 
     static String PACKAGE_EXTRACT_DIR = System
             .getProperty("package.extract.dir",
-                         new File("target/package/extract").getAbsolutePath());
+                    new File("target/package/extract").getAbsolutePath());
 
     static String FEDORA_BASEURI = System
             .getProperty("fedora.baseuri", "http://localhost:8080/fcrepo/rest");
@@ -71,20 +64,7 @@ public class ManualWiredDepositIT
     @Before
     public void wire() {
 
-        FedoraConfig fedoraConfig = new FedoraConfig() {
-
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return FedoraConfig.class;
-            }
-
-            @Override
-            public String fedora_baseuri() {
-                return FEDORA_BASEURI;
-            }
-        };
-
-        EmailNotificationsConfig emailConfig = new EmailNotificationsConfig() {
+        final EmailNotificationsConfig emailConfig = new EmailNotificationsConfig() {
 
             @Override
             public String mail_smtpHost() {
@@ -142,7 +122,7 @@ public class ManualWiredDepositIT
             }
         };
 
-        PackageFileAnalyzerFactoryConfig analyzerConfig =
+        final PackageFileAnalyzerFactoryConfig analyzerConfig =
                 new PackageFileAnalyzerFactoryConfig() {
 
                     @Override
@@ -156,7 +136,7 @@ public class ManualWiredDepositIT
                     }
                 };
 
-        PackageFileDepositWorkflowConfig workflowConfig =
+        final PackageFileDepositWorkflowConfig workflowConfig =
                 new PackageFileDepositWorkflowConfig() {
 
                     @Override
@@ -190,17 +170,11 @@ public class ManualWiredDepositIT
                     }
                 };
 
-        FedoraDepositDriver driver = new FedoraDepositDriver();
-        driver.init(fedoraConfig);
-
-        PackageFileAnalyzerFactory analyzerFactory =
+        final PackageFileAnalyzerFactory analyzerFactory =
                 new PackageFileAnalyzerFactory();
         analyzerFactory.init(analyzerConfig);
 
-        driver.setPackageAnalyzerFactory(analyzerFactory);
-        driver.setPackageProvenanceGenerator(new PackageFileProvenanceGenerator());
-
-        PackageFileDepositWorkflow rootDeposit =
+        final PackageFileDepositWorkflow rootDeposit =
                 new PackageFileDepositWorkflow();
 
         rootDeposit.init(workflowConfig);
@@ -210,14 +184,13 @@ public class ManualWiredDepositIT
 
             @Override
             public CamelContext newContext(String id, Registry registry) {
-                DefaultCamelContext cxt = new DefaultCamelContext(registry);
+                final DefaultCamelContext cxt = new DefaultCamelContext(registry);
                 cxt.getShutdownStrategy().setTimeout(1);
                 cxt.setUseMDCLogging(true);
                 cxt.setUseBreadcrumb(true);
                 return cxt;
             }
         });
-        mgr.setDepositDriver(driver, asMap(fedoraConfig));
         mgr.setNotificationDriver(new NotificationProbe(), asMap(emailConfig));
         mgr.addDepositWorkflow(rootDeposit, asMap(workflowConfig));
 
@@ -242,6 +215,7 @@ public class ManualWiredDepositIT
         return new File(PACKAGE_EXTRACT_DIR).getAbsoluteFile();
     }
 
+    @Override
     protected List<String> listResources(String path, FilenameFilter filter) {
         try {
             return Arrays.asList(Paths
@@ -250,18 +224,19 @@ public class ManualWiredDepositIT
                             .toURI())
                     .toFile().getParentFile()
                     .list((dir, name) -> !name.endsWith(".txt")));
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     private Map<String, Object> asMap(Annotation config) {
-        Map<String, Object> props = new HashMap<>();
-        for (Method m : config.annotationType().getMethods()) {
+        final Map<String, Object> props = new HashMap<>();
+        for (final Method m : config.annotationType().getMethods()) {
             try {
-                if (m.getParameterCount() == 0)
+                if (m.getParameterCount() == 0) {
                     props.put(m.getName().replace('_', '.'), m.invoke(config));
-            } catch (Exception e) {
+                }
+            } catch (final Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -276,15 +251,15 @@ public class ManualWiredDepositIT
 
     @Override
     protected DepositLocation newDepositLocationFor(String uri) {
-        File depositRoot = new File("target/package/deposit",
-                                    UUID.randomUUID().toString());
-        DepositLocation location =
+        final File depositRoot = new File("target/package/deposit",
+                UUID.randomUUID().toString());
+        final DepositLocation location =
                 new DepositLocation().withRepositoryURI(uri)
                         .withDepositDir(new File(depositRoot, "deposit")
                                 .toString())
                         .withFailDir(new File(depositRoot, "fail").toString());
 
-        PackageFileDepositWorkflowConfig workflowConfig =
+        final PackageFileDepositWorkflowConfig workflowConfig =
                 new PackageFileDepositWorkflowConfig() {
 
                     @Override
@@ -318,7 +293,7 @@ public class ManualWiredDepositIT
                     }
                 };
 
-        PackageFileDepositWorkflow wf = new PackageFileDepositWorkflow();
+        final PackageFileDepositWorkflow wf = new PackageFileDepositWorkflow();
         wf.init(workflowConfig);
 
         mgr.shutDown();
