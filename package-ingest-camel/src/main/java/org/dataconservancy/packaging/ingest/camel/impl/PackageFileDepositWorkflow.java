@@ -15,10 +15,13 @@ package org.dataconservancy.packaging.ingest.camel.impl;
 
 import static org.dataconservancy.packaging.ingest.camel.Helpers.exception;
 import static org.dataconservancy.packaging.ingest.camel.NotificationDriver.ROUTE_NOTIFICATION_FAIL;
+import static org.dataconservancy.packaging.ingest.camel.NotificationDriver.ROUTE_NOTIFICATION_SUCCESS;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.net.URI;
 
+import org.dataconservancy.packaging.ingest.PackageDepositManager;
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
 import org.dataconservancy.packaging.ingest.camel.impl.config.PackageFileDepositWorkflowConfig;
 
@@ -29,6 +32,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.Designate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +63,13 @@ public class PackageFileDepositWorkflow
      */
     public static final String HEADER_RESOURCE_LOCATIONS = "deposit.locations";
 
+    private PackageDepositManager<File> depositManager;
+
+    @Reference
+    public void setDepositManager(PackageDepositManager<File> depositManager) {
+        this.depositManager = depositManager;
+    }
+
     @Activate
     public void init(PackageFileDepositWorkflowConfig config) {
         this.config = config;
@@ -88,8 +99,18 @@ public class PackageFileDepositWorkflow
 
         /* Main deposit workflow */
         from("direct:deposit").id("deposit-workflow")
-                .setHeader(Exchange.HTTP_URI,
-                        constant(config.deposit_location()));
+                .doTry()
+                .process(ex -> depositManager.depositPackageInto(
+                        URI.create(config.deposit_location()),
+                        ex.getIn().getBody(File.class), null))
+                .doCatch(Exception.class).to("direct:_handle_failed_deposit").end()
+                .doTry()
+                .to(ROUTE_NOTIFICATION_SUCCESS).doCatch(Exception.class)
+                .process(e -> LOG.error(
+                        "Error sending notification for succesful deposit.  " + "Deposit still succeeded: ",
+                        exception(e)))
+
+                .end();
 
         /*
          * Robustly attempt to deal with a failed deposit. The end goal is to fire off a notification that deposit
@@ -98,7 +119,7 @@ public class PackageFileDepositWorkflow
          * the original file). Should notifications fail, errors will be logged.
          */
         from("direct:_handle_failed_deposit")
-                .to("direct:_notify_fail_or_log_error").to("direct:_rollback")
+                .to("direct:_notify_fail_or_log_error")
                 .process(e -> {
                     throw new RuntimeException("Deposit failed", exception(e));
                 });

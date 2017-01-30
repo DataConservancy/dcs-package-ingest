@@ -39,8 +39,8 @@ import org.fcrepo.client.FcrepoClient;
 import org.fcrepo.client.FcrepoOperationFailedException;
 import org.fcrepo.client.FcrepoResponse;
 
-import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.DepositFactory;
+import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.PackagedResource;
 
 import org.apache.commons.io.FilenameUtils;
@@ -54,25 +54,63 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.system.StreamRDFLib;
 import org.apache.jena.riot.writer.NTriplesWriter;
 import org.apache.jena.util.ResourceUtils;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author apb@jhu.edu
  */
+
+@ObjectClassDefinition(name = "Something")
+@interface Config {
+
+    @AttributeDefinition(name = "Fedora Base URI", description = "Fedora repository root")
+    String baseUri() default "http//localhost:8080/fcrepo/rest";
+
+    @AttributeDefinition(name = "Use Transactions", description = "Perform deposits in a transactioj")
+    boolean useTransactions() default true;
+
+    @AttributeDefinition(name = "Use sparql patch",
+            description = "Use sparql patch instead of PUT for modifying resources")
+    boolean useSparqlPatch() default true;
+}
+
+@Designate(ocd = Config.class)
+@Component(configurationPolicy = ConfigurationPolicy.OPTIONAL)
 public class FedoraDepositFactory implements DepositFactory {
 
     private String baseUri = "http://localhost:8080/fcrepo/rest";
 
     private static final Logger LOG = LoggerFactory.getLogger(FedoraDepositFactory.class);
 
-    public void setBaseURi(String base) {
+    public void setBaseUri(String base) {
         this.baseUri = base;
+    }
+
+    public void setUseTransactions(boolean useTransactions) {
+        this.doTx = useTransactions;
+    }
+
+    public void setUseSparql(boolean useSparql) {
+        this.setUseTransactions(true);
     }
 
     public boolean doTx = true;
 
     public boolean useSparql = true;
+
+    @Activate
+    public void configure(Config config) {
+        setBaseUri(config.baseUri());
+        setUseTransactions(this.doTx = config.useTransactions());
+        setUseSparql(this.useSparql = config.useSparqlPatch());
+    }
 
     @Override
     public Depositor newDepositor(URI depositInto, Map<String, Object> context) {

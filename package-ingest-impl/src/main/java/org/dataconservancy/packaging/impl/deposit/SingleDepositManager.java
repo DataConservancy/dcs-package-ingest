@@ -18,15 +18,15 @@
 
 package org.dataconservancy.packaging.impl.deposit;
 
-import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.DepositFactory;
+import org.dataconservancy.packaging.ingest.Depositor;
+import org.dataconservancy.packaging.ingest.PackageDepositManager;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackageWalkerFactory;
 import org.dataconservancy.packaging.ingest.PackagedResource.Type;
@@ -40,14 +40,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author apb@jhu.edu
  */
 @Component(immediate = true)
-public class SingleDepositManager {
+public class SingleDepositManager<T> implements PackageDepositManager<T> {
 
-    PackageWalkerFactory<File> walkerFactory;
+    PackageWalkerFactory<T> walkerFactory;
 
     DepositFactory depositFactory;
 
     @Reference
-    public void setWalkerFactory(PackageWalkerFactory<File> wf) {
+    public void setWalkerFactory(PackageWalkerFactory<T> wf) {
         this.walkerFactory = wf;
     }
 
@@ -56,7 +56,8 @@ public class SingleDepositManager {
         this.depositFactory = df;
     }
 
-    public void depositPackageInto(URI resource, File pkg, Map<String, Object> context) {
+    @Override
+    public void depositPackageInto(URI resource, T pkg, Map<String, Object> context) {
 
         final Map<URI, URI> localUriToDeposited = new HashMap<>();
         final List<URI> toUpdate = new ArrayList<>();

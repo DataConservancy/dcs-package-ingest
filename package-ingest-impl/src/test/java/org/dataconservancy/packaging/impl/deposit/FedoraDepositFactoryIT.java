@@ -106,7 +106,7 @@ public class FedoraDepositFactoryIT {
 
     @Before
     public void setUp() throws Exception {
-        toTest.setBaseURi(baseUri.toString());
+        toTest.setBaseUri(baseUri.toString());
         counter = new AtomicInteger();
 
         try (FcrepoResponse response = client.post(parentContaner).slug(name.getMethodName()).perform()) {

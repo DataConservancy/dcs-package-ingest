@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
-import org.dataconservancy.packaging.ingest.Depositor;
+import org.dataconservancy.packaging.ingest.DepositFactory;
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.camel.DepositWorkflow;
 import org.dataconservancy.packaging.ingest.camel.NotificationDriver;
@@ -98,9 +98,9 @@ public class KarafDepositIT
         try {
             return (String) cm
                     .getConfiguration((String) cxt
-                            .getServiceReference(Depositor.class)
+                            .getServiceReference(DepositFactory.class)
                             .getProperty(Constants.SERVICE_PID))
-                    .getProperties().get("fedora.baseuri");
+                    .getProperties().get("baseuri");
             // cxt.getServiceReferences(DepositWorkflow.class,
             // "(test.role=root)").iterator().next().getProperty("deposit.location");
 
