@@ -34,11 +34,12 @@ import java.util.Collections;
 import java.util.List;
 
 import org.dataconservancy.packaging.impl.PackageFileAnalyzer;
+import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.Depositor.Deposited;
-import org.dataconservancy.packaging.ingest.PackagedResource;
 import org.dataconservancy.packaging.ingest.PackageWalker;
+import org.dataconservancy.packaging.ingest.PackagedResource;
 import org.dataconservancy.packaging.ingest.PackagedResource.Type;
 
 import org.junit.Before;
@@ -75,6 +76,9 @@ public class PackageFileWalkerTest {
     DepositNotifier notifier;
 
     @Mock
+    PackageFileAnalyzerFactory analyzerFactory;
+
+    @Mock
     PackageFileAnalyzer analyzer;
 
     PackageFileWalker toTest = new PackageFileWalker();
@@ -95,8 +99,8 @@ public class PackageFileWalkerTest {
         when(child1.getChildren()).thenReturn(Arrays.asList(binary));
 
         when(analyzer.getContainerRoots(any(File.class))).thenReturn(Arrays.asList(root1, root2));
-
-        toTest.setAnalyzer(analyzer);
+        when(analyzerFactory.newAnalyzer()).thenReturn(analyzer);
+        toTest.setAnalyzerFactory(analyzerFactory);
     }
 
     private void initContainer(PackagedResource container, String id) {

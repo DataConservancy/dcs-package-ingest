@@ -26,9 +26,10 @@ import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.Depositor.Deposited;
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
-import org.dataconservancy.packaging.ingest.PackagedResource;
+import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackageWalkerFactory;
+import org.dataconservancy.packaging.ingest.PackagedResource;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,15 +40,17 @@ import org.osgi.service.component.annotations.Reference;
 @Component(immediate = true)
 public class PackageFileWalker implements PackageWalkerFactory<File> {
 
-    LdpPackageAnalyzer<File> analyzer;
+    LdpPackageAnalyzerFactory<File> analyzerFactory;
 
     @Reference
-    public void setAnalyzer(LdpPackageAnalyzer<File> analyzer) {
-        this.analyzer = analyzer;
+    public void setAnalyzerFactory(LdpPackageAnalyzerFactory<File> analyzerFactory) {
+        this.analyzerFactory = analyzerFactory;
     }
 
     @Override
     public PackageWalker newWalker(File pkgfile) {
+        final LdpPackageAnalyzer<File> analyzer = analyzerFactory.newAnalyzer();
+
         return new PackageWalker() {
 
             @Override
