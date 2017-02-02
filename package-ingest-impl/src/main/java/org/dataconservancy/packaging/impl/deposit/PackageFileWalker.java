@@ -22,7 +22,7 @@ import java.util.Collection;
 
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
-import org.dataconservancy.packaging.ingest.Depositor.Deposited;
+import org.dataconservancy.packaging.ingest.Depositor.DepositedResource;
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.PackageWalker;
@@ -69,7 +69,7 @@ public class PackageFileWalker implements PackageWalkerFactory<File> {
         for (final PackagedResource packagedResource : packedResources) {
 
             // Deposit the current node
-            final Deposited result = depositer.deposit(packagedResource, into);
+            final DepositedResource result = depositer.deposit(packagedResource, into);
 
             // Notify as appropriate
             notify.onDeposit(result.uri, packagedResource);

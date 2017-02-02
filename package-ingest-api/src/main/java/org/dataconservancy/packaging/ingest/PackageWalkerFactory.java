@@ -17,9 +17,17 @@
 package org.dataconservancy.packaging.ingest;
 
 /**
+ * Create a new walker who can walk and deposit resources in the given package.
+ *
  * @author apb@jhu.edu
  */
 public interface PackageWalkerFactory<T> {
 
+    /**
+     * Create a walker to walk the contents of a package and deposit its resources.
+     *
+     * @param pkgSrc The package.
+     * @return A package walker that walks the given package.
+     */
     public PackageWalker newWalker(T pkgSrc);
 }

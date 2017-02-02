@@ -18,6 +18,11 @@ package org.dataconservancy.packaging.ingest;
 
 import java.net.URI;
 
+/**
+ * Provides notifications when a resource is deposited.
+ *
+ * @author apb@jhu.edu
+ */
 public interface DepositNotifier {
 
     /**

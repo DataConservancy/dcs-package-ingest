@@ -148,11 +148,11 @@ public class FedoraDepositFactory implements DepositFactory {
         }
 
         @Override
-        public Deposited deposit(PackagedResource resource, URI parent) {
+        public DepositedResource deposit(PackagedResource resource, URI parent) {
 
             final URI depositInto = parent == null ? txDepositInto : parent;
 
-            final Deposited deposited = new Deposited();
+            final DepositedResource deposited = new DepositedResource();
 
             deposited.uri = doDeposit(resource, depositInto);
 

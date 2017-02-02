@@ -20,21 +20,26 @@ import java.net.URI;
 import java.util.Map;
 
 /**
+ * Deposits resources into a repository.
+ *
  * @author apb@jhu.edu
  */
 public interface Depositor {
 
-    public class Deposited {
+    /**
+     * Identifies a deposited object.
+     */
+    public class DepositedResource {
 
         public URI uri;
 
         public URI describedBy;
 
-        public Deposited() {
+        public DepositedResource() {
 
         }
 
-        public Deposited(URI uri, URI describedBy) {
+        public DepositedResource(URI uri, URI describedBy) {
             this.uri = uri;
             this.describedBy = describedBy;
         }
@@ -51,9 +56,9 @@ public interface Depositor {
      * @param intoContainer URI of the parent container to deposit into
      * @return URI(s) of deposited resource;
      */
-    public Deposited deposit(PackagedResource packagedResource, URI intoContainer);
+    public DepositedResource deposit(PackagedResource packagedResource, URI intoContainer);
 
-    public default Deposited deposit(PackagedResource resource) {
+    public default DepositedResource deposit(PackagedResource resource) {
         return deposit(resource, null);
     }
 

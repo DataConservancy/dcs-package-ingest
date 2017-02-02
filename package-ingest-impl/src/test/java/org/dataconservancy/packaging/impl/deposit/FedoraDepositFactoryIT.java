@@ -33,7 +33,7 @@ import org.fcrepo.client.FcrepoClient;
 import org.fcrepo.client.FcrepoResponse;
 
 import org.dataconservancy.packaging.ingest.Depositor;
-import org.dataconservancy.packaging.ingest.Depositor.Deposited;
+import org.dataconservancy.packaging.ingest.Depositor.DepositedResource;
 import org.dataconservancy.packaging.ingest.PackagedResource;
 import org.dataconservancy.packaging.ingest.PackagedResource.Type;
 
@@ -118,7 +118,7 @@ public class FedoraDepositFactoryIT {
         final Depositor test = toTest.newDepositer(myContainer);
 
         // Deposit a container into the default container (myContaier)
-        final Deposited first = test.deposit(rdfResource("<> a <test:first>"));
+        final DepositedResource first = test.deposit(rdfResource("<> a <test:first>"));
 
         // Deposit into the container we just created;
         test.deposit(rdfResource("<> a <test:second>"), first.uri);
@@ -198,10 +198,10 @@ public class FedoraDepositFactoryIT {
         final Depositor test = toTest.newDepositer(myContainer);
 
         // Deposit a container into the default container (myContaier)
-        final Deposited containerDeposit = test.deposit(rdfResource("<> <test:rel> <test:resource_2>"));
+        final DepositedResource containerDeposit = test.deposit(rdfResource("<> <test:rel> <test:resource_2>"));
         toRemap.put(URI.create("test:resource_1"), containerDeposit.uri);
 
-        final Deposited binaryDeposit = test.deposit(binaryResource("CONTENT", rdfResource(
+        final DepositedResource binaryDeposit = test.deposit(binaryResource("CONTENT", rdfResource(
                 "<> <test:rel> <test:resource_1>")), containerDeposit.uri);
         toRemap.put(URI.create("test:resource_2"), binaryDeposit.uri);
 
@@ -252,7 +252,7 @@ public class FedoraDepositFactoryIT {
         final Depositor test = toTest.newDepositer(myContainer);
 
         // Deposit a container into the default container (myContaier)
-        final Deposited first = test.deposit(rdfResource("<> <test:rel> <test:before#hash>"));
+        final DepositedResource first = test.deposit(rdfResource("<> <test:rel> <test:before#hash>"));
         toRemap.put(URI.create("test:before"), URI.create("test:after"));
 
         test.remap(first.uri, toRemap);

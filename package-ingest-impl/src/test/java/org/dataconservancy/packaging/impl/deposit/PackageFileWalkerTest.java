@@ -35,7 +35,7 @@ import org.dataconservancy.packaging.impl.PackageFileAnalyzer;
 import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
-import org.dataconservancy.packaging.ingest.Depositor.Deposited;
+import org.dataconservancy.packaging.ingest.Depositor.DepositedResource;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackagedResource;
 import org.dataconservancy.packaging.ingest.PackagedResource.Type;
@@ -113,7 +113,7 @@ public class PackageFileWalkerTest {
 
         when(deposit.deposit(any(PackagedResource.class), any(URI.class))).thenAnswer(i -> {
             depositedResources.add(i.getArgumentAt(0, PackagedResource.class));
-            return new Deposited();
+            return new DepositedResource();
         });
 
         walker.walk(deposit, notifier);
@@ -134,13 +134,13 @@ public class PackageFileWalkerTest {
         final URI depositedRoot2 = URI.create("deposit:root2");
         final URI depositedChild1 = URI.create("deposited:child1");
         when(deposit.deposit(eq(root1), isNull(URI.class)))
-                .thenReturn(new Deposited(depositedRoot1, null));
+                .thenReturn(new DepositedResource(depositedRoot1, null));
         when(deposit.deposit(eq(root2), isNull(URI.class)))
-                .thenReturn(new Deposited(depositedRoot2, null));
+                .thenReturn(new DepositedResource(depositedRoot2, null));
         when(deposit.deposit(eq(child1), eq(depositedRoot1)))
-                .thenReturn(new Deposited(depositedChild1, null));
+                .thenReturn(new DepositedResource(depositedChild1, null));
         when(deposit.deposit(eq(binary), eq(depositedChild1)))
-                .thenReturn(new Deposited());
+                .thenReturn(new DepositedResource());
 
         walker.walk(deposit, notifier);
 
@@ -159,13 +159,13 @@ public class PackageFileWalkerTest {
         final URI depositedBinaryDescriptionURI = URI.create("deposited:binaryDescription");
 
         when(deposit.deposit(eq(root1), isNull(URI.class)))
-                .thenReturn(new Deposited(depositedRoot1, null));
+                .thenReturn(new DepositedResource(depositedRoot1, null));
         when(deposit.deposit(eq(root2), isNull(URI.class)))
-                .thenReturn(new Deposited(depositedRoot2, null));
+                .thenReturn(new DepositedResource(depositedRoot2, null));
         when(deposit.deposit(eq(child1), eq(depositedRoot1)))
-                .thenReturn(new Deposited(depositedChild1, null));
+                .thenReturn(new DepositedResource(depositedChild1, null));
         when(deposit.deposit(eq(binary), eq(depositedChild1)))
-                .thenReturn(new Deposited(depositedBinaryURI, depositedBinaryDescriptionURI));
+                .thenReturn(new DepositedResource(depositedBinaryURI, depositedBinaryDescriptionURI));
 
         walker.walk(deposit, notifier);
 

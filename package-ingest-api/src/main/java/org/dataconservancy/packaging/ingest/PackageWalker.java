@@ -17,9 +17,17 @@
 package org.dataconservancy.packaging.ingest;
 
 /**
+ * Walks resources in some implementation-specific way, and deposits them.
+ *
  * @author apb@jhu.edu
  */
 public interface PackageWalker {
 
-    public void walk(Depositor depositer, DepositNotifier notifier);
+    /**
+     * Deposit resources using the given depositor and notifier.
+     *
+     * @param depositor The walker will use this to deposit.
+     * @param notifier Notifications of deposit shall be sent here.
+     */
+    public void walk(Depositor depositor, DepositNotifier notifier);
 }

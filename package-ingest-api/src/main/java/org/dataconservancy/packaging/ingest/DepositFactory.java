@@ -26,21 +26,21 @@ import java.util.Map;
 public interface DepositFactory {
 
     /**
-     * Create a depositer that deposits into the given container.
+     * Create a depositor that deposits into the given container.
      *
      * @param depositInto URI of an LDP container.
-     * @return Initialized Deposite.
+     * @return Initialized Depositor.
      */
     public default Depositor newDepositer(URI depositInto) {
         return newDepositor(depositInto, Collections.emptyMap());
     }
 
     /**
-     * Create a depositer that deposits into the given container.
+     * Create a depositor that deposits into the given container.
      *
      * @param depositInto
      * @param context Additional context
-     * @return
+     * @return Initialized Depositor.
      */
     public Depositor newDepositor(URI depositInto, Map<String, Object> context);
 }
