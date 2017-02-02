@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Johns Hopkins University
+ * Copyright 2017 Johns Hopkins University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest;
 
+import java.net.URI;
 import java.util.Map;
 
-public interface LdpPackageProvenanceGenerator<T> {
+/**
+ * Manages the deposit of the contents of a package into a container in the repository.
+ *
+ * @author apb@jhu.edu
+ */
+public interface PackageDepositManager<T> {
 
-    PackagedResource generatePackageProvenance(T pkg,
-                                          Map<String, String> uriMapping);
-
+    /**
+     * deposit a package into a repository container.
+     *
+     * @param resource repository container URI.
+     * @param pkg Some sort of representation of a package (e.g. a file, InputStream, etc)
+     * @param context Opaque, implementation-specific context. May be null , or empty
+     */
+    public void depositPackageInto(URI resource, T pkg, Map<String, Object> context);
 }

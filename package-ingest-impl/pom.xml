@@ -1,19 +1,13 @@
-<!--
-  ~ Copyright 2016 Johns Hopkins University
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<!-- ~ Copyright 2016 Johns Hopkins University ~ ~ Licensed under the Apache 
+  License, Version 2.0 (the "License"); ~ you may not use this file except 
+  in compliance with the License. ~ You may obtain a copy of the License at 
+  ~ ~ http://www.apache.org/licenses/LICENSE-2.0 ~ ~ Unless required by applicable 
+  law or agreed to in writing, software ~ distributed under the License is 
+  distributed on an "AS IS" BASIS, ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY 
+  KIND, either express or implied. ~ See the License for the specific language 
+  governing permissions and ~ limitations under the License. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.dataconservancy.packaging</groupId>
@@ -22,6 +16,20 @@
   </parent>
   <artifactId>package-ingest-impl</artifactId>
   <packaging>bundle</packaging>
+
+  <profiles>
+    <profile>
+      <id>standard</id>
+      <properties>
+        <fcrepo.dynamic.test.port>8080</fcrepo.dynamic.test.port>
+        <fcrepo.dynamic.jms.port>61616</fcrepo.dynamic.jms.port>
+        <fcrepo.dynamic.stomp.port>61613</fcrepo.dynamic.stomp.port>
+      </properties>
+    </profile>
+  </profiles>
+
+
+
   <build>
     <plugins>
       <plugin>
@@ -35,6 +43,101 @@
             <_dsannotations>*</_dsannotations>
           </instructions>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <configuration>
+          <portNames>
+            <portName>fcrepo.dynamic.test.port</portName>
+            <portName>fcrepo.dynamic.jms.port</portName>
+            <portName>fcrepo.dynamic.stomp.port</portName>
+          </portNames>
+        </configuration>
+        <executions>
+          <execution>
+            <id>reserve-port</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>reserve-network-port</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <!-- This is intentional, due to a bug in 2.19.x -->
+        <version>2.18.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <systemPropertyVariables>
+            <fcrepo.dynamic.test.port>${fcrepo.dynamic.test.port}</fcrepo.dynamic.test.port>
+            <fcrepo.dynamic.jms.port>${fcrepo.dynamic.jms.port}</fcrepo.dynamic.jms.port>
+            <fcrepo.dynamic.stomp.port>${fcrepo.dynamic.stomp.port}</fcrepo.dynamic.stomp.port>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.cargo</groupId>
+        <artifactId>cargo-maven2-plugin</artifactId>
+        <configuration>
+          <!-- Container configuration -->
+          <deployer />
+          <container>
+            <containerId>tomcat8x</containerId>
+            <type>installed</type>
+            <systemProperties>
+              <fcrepo.jms.baseUrl>http://localhost:${fcrepo.dynamic.test.port}/fcrepo/rest</fcrepo.jms.baseUrl>
+              <fcrepo.home>${project.build.directory}/fcrepo</fcrepo.home>
+              <fcrepo.modeshape.configuration>classpath:/config/file-simple/repository.json</fcrepo.modeshape.configuration>
+              <fcrepo.dynamic.jms.port>${fcrepo.dynamic.jms.port}</fcrepo.dynamic.jms.port>
+              <fcrepo.dynamic.stomp.port>${fcrepo.dynamic.stomp.port}</fcrepo.dynamic.stomp.port>
+            </systemProperties>
+          </container>
+          <deployables>
+            <deployable>
+              <groupId>org.fcrepo</groupId>
+              <artifactId>fcrepo-webapp</artifactId>
+              <type>war</type>
+              <properties>
+                <context>fcrepo</context>
+              </properties>
+            </deployable>
+          </deployables>
+          <configuration>
+            <properties>
+              <!-- <cargo.jvmargs>-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005</cargo.jvmargs> -->
+              <cargo.servlet.port>${fcrepo.dynamic.test.port}</cargo.servlet.port>
+            </properties>
+          </configuration>
+        </configuration>
+        <executions>
+          <execution>
+            <id>start-container</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>start</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>stop-container</id>
+            <phase>post-integration-test</phase>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -70,7 +173,7 @@
       <artifactId>tika-bundle</artifactId>
       <version>1.11</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
@@ -97,12 +200,40 @@
 
     <dependency>
       <groupId>org.apache.jena</groupId>
-      <artifactId>jena-core</artifactId>
+      <artifactId>jena-osgi</artifactId>
+    </dependency>
+
+    <!-- for OSGi -->
+    <dependency>
+      <groupId>org.apache.servicemix.bundles</groupId>
+      <artifactId>org.apache.servicemix.bundles.xmlresolver</artifactId>
+      <version>1.2_5</version>
+    </dependency>
+
+    <!-- for OSGi -->
+    <dependency>
+      <groupId>org.apache.servicemix.bundles</groupId>
+      <artifactId>org.apache.servicemix.bundles.xerces</artifactId>
+      <version>2.11.0_1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>xml-apis</groupId>
+          <artifactId>xml-apis</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-arq</artifactId>
+      <groupId>xml-apis</groupId>
+      <artifactId>xml-apis</artifactId>
+      <version>1.4.01</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.fcrepo.client</groupId>
+      <artifactId>fcrepo-java-client</artifactId>
+      <version>0.2.1</version>
     </dependency>
 
     <dependency>
@@ -118,10 +249,25 @@
     </dependency>
 
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-nop</artifactId>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.fcrepo</groupId>
+      <artifactId>fcrepo-webapp</artifactId>
+      <type>war</type>
+      <version>${fcrepo.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
 
   </dependencies>
 

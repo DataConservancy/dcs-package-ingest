@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Johns Hopkins University
+ * Copyright 2017 Johns Hopkins University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest;
 
-import java.util.Map;
+/**
+ * Create a new walker who can walk and deposit resources in the given package.
+ *
+ * @author apb@jhu.edu
+ */
+public interface PackageWalkerFactory<T> {
 
-public interface LdpPackageProvenanceGenerator<T> {
-
-    PackagedResource generatePackageProvenance(T pkg,
-                                          Map<String, String> uriMapping);
-
+    /**
+     * Create a walker to walk the contents of a package and deposit its resources.
+     *
+     * @param pkgSrc The package.
+     * @return A package walker that walks the given package.
+     */
+    public PackageWalker newWalker(T pkgSrc);
 }

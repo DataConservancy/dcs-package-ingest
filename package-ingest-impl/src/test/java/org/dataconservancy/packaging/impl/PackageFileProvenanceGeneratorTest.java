@@ -15,7 +15,7 @@
  */
 package org.dataconservancy.packaging.impl;
 
-import org.dataconservancy.packaging.ingest.LdpResource;
+import org.dataconservancy.packaging.ingest.PackagedResource;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,21 +50,21 @@ public class PackageFileProvenanceGeneratorTest {
 
     @Test
     public void testProvenanceGeneration() {
-        LdpResource packageResource = underTest.generatePackageProvenance(packageFile, testURIMap);
+        PackagedResource packageResource = underTest.generatePackageProvenance(packageFile, testURIMap);
 
         assertNotNull(packageResource);
 
         assertEquals(packageFile.toURI(), packageResource.getURI());
-        assertEquals(LdpResource.Type.NONRDFSOURCE, packageResource.getType());
+        assertEquals(PackagedResource.Type.NONRDFSOURCE, packageResource.getType());
         assertTrue(packageResource.getChildren().isEmpty());
         assertNotNull(packageResource.getBody());
 
         assertNotNull(packageResource.getDescription());
 
-        LdpResource provenanceResource = packageResource.getDescription();
+        PackagedResource provenanceResource = packageResource.getDescription();
         assertNotNull(provenanceResource.getBody());
         assertNull(provenanceResource.getDescription());
         assertTrue(provenanceResource.getChildren().isEmpty());
-        assertEquals(LdpResource.Type.RDFSOURCE, provenanceResource.getType());
+        assertEquals(PackagedResource.Type.RDFSOURCE, provenanceResource.getType());
     }
 }

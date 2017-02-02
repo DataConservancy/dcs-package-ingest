@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Johns Hopkins University
+ * Copyright 2017 Johns Hopkins University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest;
 
-import java.util.Map;
+/**
+ * Walks resources in some implementation-specific way, and deposits them.
+ *
+ * @author apb@jhu.edu
+ */
+public interface PackageWalker {
 
-public interface LdpPackageProvenanceGenerator<T> {
-
-    PackagedResource generatePackageProvenance(T pkg,
-                                          Map<String, String> uriMapping);
-
+    /**
+     * Deposit resources using the given depositor and notifier.
+     *
+     * @param depositor The walker will use this to deposit.
+     * @param notifier Notifications of deposit shall be sent here.
+     */
+    public void walk(Depositor depositor, DepositNotifier notifier);
 }

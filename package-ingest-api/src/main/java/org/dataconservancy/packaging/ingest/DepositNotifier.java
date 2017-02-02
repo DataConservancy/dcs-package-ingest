@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Johns Hopkins University
+ * Copyright 2017 Johns Hopkins University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest;
 
-import java.util.Map;
+import java.net.URI;
 
-public interface LdpPackageProvenanceGenerator<T> {
+/**
+ * Provides notifications when a resource is deposited.
+ *
+ * @author apb@jhu.edu
+ */
+public interface DepositNotifier {
 
-    PackagedResource generatePackageProvenance(T pkg,
-                                          Map<String, String> uriMapping);
+    /**
+     * Notify when deposit is finished.
+     *
+     * @param depositURI new URI of deposited resource
+     * @param resource The resource just deposited.
+     */
+    public void onDeposit(URI depositURI, PackagedResource resource);
 
 }

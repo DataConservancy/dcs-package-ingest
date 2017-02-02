@@ -25,7 +25,7 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
 import org.apache.jena.riot.system.PrefixMapFactory;
 import org.dataconservancy.packaging.ingest.LdpPackageProvenanceGenerator;
-import org.dataconservancy.packaging.ingest.LdpResource;
+import org.dataconservancy.packaging.ingest.PackagedResource;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 
@@ -44,10 +44,10 @@ import java.util.Map;
 @Component(configurationPolicy = ConfigurationPolicy.IGNORE, immediate = true)
 public class PackageFileProvenanceGenerator implements LdpPackageProvenanceGenerator<File> {
     @Override
-    public LdpResource generatePackageProvenance(File pkg, Map<String, String> uriMap) {
+    public PackagedResource generatePackageProvenance(File pkg, Map<String, String> uriMap) {
         URI packageURI = pkg.toURI();
         PackageProvenanceLdpResource resource = new PackageProvenanceLdpResource(packageURI);
-        resource.setType(LdpResource.Type.NONRDFSOURCE);
+        resource.setType(PackagedResource.Type.NONRDFSOURCE);
 
         try {
             resource.setBody(new FileInputStream(pkg));
@@ -76,9 +76,9 @@ public class PackageFileProvenanceGenerator implements LdpPackageProvenanceGener
     }
 
     //Creates an ldp resource that represents the URI map of archive URIs to package file URIs
-    private LdpResource generateRdfProvenanceResource(Map<String, String> uriMap, URI uri) {
+    private PackagedResource generateRdfProvenanceResource(Map<String, String> uriMap, URI uri) {
         PackageProvenanceLdpResource rdfResource = new PackageProvenanceLdpResource(uri);
-        rdfResource.setType(LdpResource.Type.RDFSOURCE);
+        rdfResource.setType(PackagedResource.Type.RDFSOURCE);
         rdfResource.setMediaType("text/turtle");
         Model remModel = ModelFactory.createDefaultModel();
 
