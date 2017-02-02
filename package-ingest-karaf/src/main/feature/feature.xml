@@ -25,15 +25,6 @@
     <details>Package Ingest</details>
     <feature>scr</feature>
 
-
-    <!-- Hawtio for monitoring <feature version="${hawtio.version}">hawtio</feature> -->
-
-    <!-- Camel -->
-    <feature version="${camel.version}">camel-core</feature>
-    <feature version="${camel.version}">camel-http4</feature>
-    <feature version="${camel.version}">camel-velocity</feature>
-    <feature version="${camel.version}">camel-mail</feature>
-    
     <bundle>mvn:org.apache.jena/jena-osgi/${jena.version}</bundle>
     <bundle>mvn:com.fasterxml.jackson.core/jackson-core/2.8.6</bundle>
     <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/2.8.6</bundle>

@@ -51,35 +51,6 @@
 
   <dependencies>
 
-    <!-- These 'provided' are here to exclude them as explicit dependencies. 
-      They'll be provided by a karaf feature, or have an osgi variant that should 
-      be used instead (like the bizarre Apache fat osgi jars) -->
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-core</artifactId>
-      <version>${camel.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-http4</artifactId>
-      <version>${camel.version}</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -108,19 +79,7 @@
 
     <dependency>
       <groupId>org.dataconservancy.packaging</groupId>
-      <artifactId>package-ingest-camel</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.dataconservancy.packaging</groupId>
       <artifactId>package-ingest-impl</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.dataconservancy.packaging</groupId>
-      <artifactId>package-ingest-osgi</artifactId>
       <version>${project.version}</version>
     </dependency>
 

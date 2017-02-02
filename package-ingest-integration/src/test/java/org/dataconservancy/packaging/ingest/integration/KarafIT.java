@@ -28,8 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.dataconservancy.packaging.ingest.osgi.impl.OsgiContextFactory;
-
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.ConfigurationManager;
 import org.ops4j.pax.exam.Option;
@@ -55,10 +53,6 @@ public interface KarafIT {
                         .artifactId("package-ingest-karaf").versionAsInProject()
                         .classifier("features").type("xml");
 
-        final MavenUrlReference camelRepo = maven().groupId("org.apache.camel.karaf")
-                .artifactId("apache-camel").type("xml").classifier("features")
-                .versionAsInProject();
-
         final ArrayList<Option> options = new ArrayList<>();
 
         final Option[] defaultOptions = new Option[] {
@@ -68,10 +62,7 @@ public interface KarafIT {
             // configureConsole().ignoreLocalConsole(),
             logLevel(LogLevel.WARN),
 
-            configFile(OsgiContextFactory.class),
-
-            features(pkgKaraf, "package-ingest-karaf"),
-            features(camelRepo, "camel-test") };
+            features(pkgKaraf, "package-ingest-karaf") };
 
         options.addAll(Arrays.asList(defaultOptions));
         options.addAll(additionalKarafConfig());
@@ -102,5 +93,4 @@ public interface KarafIT {
             throw new RuntimeException(e);
         }
     }
-
 }

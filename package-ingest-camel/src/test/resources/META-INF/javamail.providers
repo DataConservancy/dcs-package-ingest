@@ -1,3 +1,0 @@
-# See http://javamail.kenai.com/nonav/javadocs/javax/mail/Session.html
-protocol=smtp; type=transport; class=org.jvnet.mock_javamail.MockTransport; vendor=java.net mock-javamail project;
-protocol=smtps; type=transport; class=org.jvnet.mock_javamail.MockTransport; vendor=java.net mock-javamail project;

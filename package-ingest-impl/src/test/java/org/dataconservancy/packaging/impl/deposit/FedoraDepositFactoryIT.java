@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.fcrepo.client.FcrepoClient;
 import org.fcrepo.client.FcrepoResponse;
 
-import org.dataconservancy.packaging.impl.deposit.FedoraDepositFactory;
 import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.Depositor.Deposited;
 import org.dataconservancy.packaging.ingest.PackagedResource;
