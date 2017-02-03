@@ -15,6 +15,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 # Simple Data Conservancy Package Ingest Service #
+[![Build Status](https://travis-ci.org/DataConservancy/dcs-package-ingest.svg?branch=master)](https://travis-ci.org/DataConservancy/dcs-package-ingest)
 
 This is a description of the package ingest service
 
