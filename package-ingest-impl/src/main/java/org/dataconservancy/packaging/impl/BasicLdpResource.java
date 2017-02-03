@@ -13,25 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.dataconservancy.packaging.impl;
 
-import org.dataconservancy.packaging.ingest.PackagedResource;
+package org.dataconservancy.packaging.impl;
 
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.dataconservancy.packaging.ingest.PackagedResource;
+
+/**
+ * LDP resource impl
+ *
+ * @author bbrosius@jhu.edu
+ */
 public class BasicLdpResource implements PackagedResource {
 
-    private URI uri;
+    private final URI uri;
+
     private Type type;
+
     private Collection<PackagedResource> children;
+
     private InputStream content;
+
     private String mediaType;
+
     private PackagedResource domainObjectDescription;
 
-    public BasicLdpResource(URI uri) {
+    /**
+     * Create a packaged resource with the given URI
+     *
+     * @param uri local (to package) URI.
+     */
+    public BasicLdpResource(final URI uri) {
         this.uri = uri;
         children = new ArrayList<>();
     }
@@ -41,7 +57,12 @@ public class BasicLdpResource implements PackagedResource {
         return type;
     }
 
-    public void setType(Type type) {
+    /**
+     * Set the type.
+     *
+     * @param type LDPR type.
+     */
+    public void setType(final Type type) {
         this.type = type;
     }
 
@@ -50,7 +71,12 @@ public class BasicLdpResource implements PackagedResource {
         return uri;
     }
 
-    public void addChild(PackagedResource child) {
+    /**
+     * Add an LDP child resource.
+     *
+     * @param child child resource.
+     */
+    public void addChild(final PackagedResource child) {
         if (children == null) {
             children = new ArrayList<>();
         }
@@ -63,7 +89,12 @@ public class BasicLdpResource implements PackagedResource {
         return children;
     }
 
-    public void setChildren(Collection<PackagedResource> children) {
+    /**
+     * Set the LDP child resources.
+     *
+     * @param children collection of children, or empty.
+     */
+    public void setChildren(final Collection<PackagedResource> children) {
         this.children = children;
     }
 
@@ -72,7 +103,12 @@ public class BasicLdpResource implements PackagedResource {
         return content;
     }
 
-    public void setBody(InputStream body) {
+    /**
+     * Set the body
+     *
+     * @param body the body.
+     */
+    public void setBody(final InputStream body) {
         this.content = body;
     }
 
@@ -81,7 +117,12 @@ public class BasicLdpResource implements PackagedResource {
         return mediaType;
     }
 
-    public void setMediaType(String mediaType) {
+    /**
+     * Set the media type.
+     *
+     * @param mediaType MIME type.
+     */
+    public void setMediaType(final String mediaType) {
         this.mediaType = mediaType;
     }
 
@@ -90,7 +131,12 @@ public class BasicLdpResource implements PackagedResource {
         return domainObjectDescription;
     }
 
-    public void setDescription(PackagedResource description) {
+    /**
+     * Set the description of an LDP-NR.
+     *
+     * @param description description resource.
+     */
+    public void setDescription(final PackagedResource description) {
         this.domainObjectDescription = description;
     }
 }

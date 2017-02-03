@@ -18,6 +18,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+/**
+ * @author apb@jhu.edu
+ */
 public abstract class DepositIT {
 
     @Rule
@@ -48,22 +51,14 @@ public abstract class DepositIT {
         // "/packages/test-package.zip"
     }
 
-    /**
-     * Tests the deposit of a package which has multiple objects in the package without a parent.
-     *
-     * @throws Exception
-     */
+    // Tests the deposit of a package which has multiple objects in the package without a parent.
     @Test
     public void depositFlatPackageTest() throws Exception {
         // "/packages/flat-package.tar"
 
     }
 
-    /**
-     * Insures that a package containing a binary object that has no parent is properly ingested.
-     *
-     * @throws Exception
-     */
+    // Ensures that a package containing a binary object that has no parent is properly ingested.
     @Test
     public void depositFlatPackageWithBinariesTest() throws Exception {
         // "/packages/flat-package-with-binary.tar"

@@ -157,10 +157,10 @@ public class FedoraDepositFactoryIT {
         assertEquals(1, inMyContainer.size());
         final URI binary = inMyContainer.get(0);
 
-        List<URI> descriptions;
+        final List<URI> descriptions;
         try (FcrepoResponse get = client.get(binary).perform()) {
             assertEquals("text/plain", get.getContentType());
-            assertEquals("CONTENT", IOUtils.toString(get.getBody()));
+            assertEquals("CONTENT", IOUtils.toString(get.getBody(), UTF_8));
 
             descriptions = get.getLinkHeaders("describedby");
         }
@@ -219,7 +219,7 @@ public class FedoraDepositFactoryIT {
         assertEquals(1, inFirstContainer.size());
         final URI binaryUri = inFirstContainer.get(0);
 
-        URI secondX;
+        final URI secondX;
         try (FcrepoResponse head = client.head(binaryUri).perform()) {
             secondX = head.getLinkHeaders("describedby").get(0);
         }
@@ -275,7 +275,7 @@ public class FedoraDepositFactoryIT {
 
     }
 
-    private PackagedResource rdfResource(String rdf) {
+    private PackagedResource rdfResource(final String rdf) {
         final PackagedResource resource = mock(PackagedResource.class);
         when(resource.getURI()).thenReturn(URI.create("file:/test/resource_" + counter.incrementAndGet()));
         when(resource.getType()).thenReturn(Type.CONTAINER);
@@ -285,7 +285,7 @@ public class FedoraDepositFactoryIT {
         return resource;
     }
 
-    private PackagedResource binaryResource(String content, PackagedResource description) {
+    private PackagedResource binaryResource(final String content, final PackagedResource description) {
         final PackagedResource resource = mock(PackagedResource.class);
         when(resource.getURI()).thenReturn(URI.create("file:/test/binary_" + counter.incrementAndGet() + ".txt"));
         when(resource.getType()).thenReturn(Type.NONRDFSOURCE);
@@ -296,7 +296,7 @@ public class FedoraDepositFactoryIT {
         return resource;
     }
 
-    private List<URI> getChildren(URI container) throws Exception {
+    private List<URI> getChildren(final URI container) throws Exception {
         try (FcrepoResponse get = client.get(container).accept("application/rdf+xml").perform()) {
             final Model model = ModelFactory.createDefaultModel();
 

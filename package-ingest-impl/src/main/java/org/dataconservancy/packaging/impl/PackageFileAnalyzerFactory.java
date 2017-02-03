@@ -13,36 +13,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.impl;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
 import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
+
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+
+/**
+ * Creates package file analyzers
+ *
+ * @author apb@jhu.edu
+ */
+
+@ObjectClassDefinition(name = "org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory",
+        description = "Unpacks and analyzes package files for ingest")
+@interface PackageFileAnalyzerFactoryConfig {
+
+    @AttributeDefinition(description = "Directory for temporary unpacking package contents as necessary")
+    String package_extract_dir();
+}
 
 @Designate(ocd = PackageFileAnalyzerFactoryConfig.class)
-@Component(configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true)
+@Component(configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true)
 public class PackageFileAnalyzerFactory
         implements LdpPackageAnalyzerFactory<File> {
 
     private File extractBaseDir;
 
+    /**
+     * Set the extraction dir.
+     *
+     * @param dir Directory path.
+     */
+    public void setExtractDir(final String dir) {
+        this.extractBaseDir = new File(dir);
+        extractBaseDir.mkdirs();
+    }
+
+    /**
+     * Initialize.
+     *
+     * @param config OSGi DS-style configuration
+     */
     @Activate
     @Modified
-    public void init(PackageFileAnalyzerFactoryConfig config) {
-        extractBaseDir = new File(config.package_extract_dir());
-        extractBaseDir.mkdirs();
+    public void init(final PackageFileAnalyzerFactoryConfig config) {
+        setExtractDir(config.package_extract_dir());
     }
 
     @Override
     public LdpPackageAnalyzer<File> newAnalyzer() {
+
+        // Reasonablbe default in case it's not set
+        if (extractBaseDir == null) {
+            synchronized (this) {
+                try {
+                    extractBaseDir = Files.createTempDirectory("extractorStaging").toFile();
+                } catch (final IOException e) {
+                    throw new RuntimeException("Could not create temporary extraction directory", e);
+                }
+            }
+        }
         return new PackageFileAnalyzer(new OpenPackageService(),
-                                       extractBaseDir);
+                extractBaseDir);
     }
 
 }

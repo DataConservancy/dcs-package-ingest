@@ -38,8 +38,8 @@ public interface DepositFactory {
     /**
      * Create a depositor that deposits into the given container.
      *
-     * @param depositInto
-     * @param context Additional context
+     * @param depositInto URI of the container to deposit into.
+     * @param context Additional context.
      * @return Initialized Depositor.
      */
     public Depositor newDepositor(URI depositInto, Map<String, Object> context);

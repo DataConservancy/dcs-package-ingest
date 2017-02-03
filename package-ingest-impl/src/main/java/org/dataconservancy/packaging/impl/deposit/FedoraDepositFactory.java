@@ -61,10 +61,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author apb@jhu.edu
- */
-
 @ObjectClassDefinition(name = "Something")
 @interface Config {
 
@@ -79,6 +75,11 @@ import org.slf4j.LoggerFactory;
     boolean useSparqlPatch() default true;
 }
 
+/**
+ * Deposit factory into Fedora implementations.
+ *
+ * @author apb@jhu.edu
+ */
 @Designate(ocd = Config.class)
 @Component(configurationPolicy = ConfigurationPolicy.OPTIONAL)
 public class FedoraDepositFactory implements DepositFactory {
@@ -87,15 +88,30 @@ public class FedoraDepositFactory implements DepositFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(FedoraDepositFactory.class);
 
-    public void setBaseUri(String base) {
+    /**
+     * Set the Fedora baseURI.
+     *
+     * @param base the base URI.
+     */
+    public void setBaseUri(final String base) {
         this.baseUri = base;
     }
 
-    public void setUseTransactions(boolean useTransactions) {
+    /**
+     * Whether to use Fedora transaction/batch operations.
+     *
+     * @param useTransactions true to use transactions
+     */
+    public void setUseTransactions(final boolean useTransactions) {
         this.doTx = useTransactions;
     }
 
-    public void setUseSparql(boolean useSparql) {
+    /**
+     * Use SPARQL/Update PATCH requests.
+     *
+     * @param useSparql if True, updates to objects will use SPARQL/Update PATCH.
+     */
+    public void setUseSparql(final boolean useSparql) {
         this.setUseTransactions(true);
     }
 
@@ -103,15 +119,20 @@ public class FedoraDepositFactory implements DepositFactory {
 
     public boolean useSparql = true;
 
+    /**
+     * Configure via OSGi.
+     *
+     * @param config configuration params.
+     */
     @Activate
-    public void configure(Config config) {
+    public void configure(final Config config) {
         setBaseUri(config.baseUri());
         setUseTransactions(this.doTx = config.useTransactions());
         setUseSparql(this.useSparql = config.useSparqlPatch());
     }
 
     @Override
-    public Depositor newDepositor(URI depositInto, Map<String, Object> context) {
+    public Depositor newDepositor(final URI depositInto, final Map<String, Object> context) {
 
         final FcrepoClient client = FcrepoClient.client().build();
 
@@ -138,7 +159,7 @@ public class FedoraDepositFactory implements DepositFactory {
 
         private final FcrepoClient client;
 
-        private TxDepositor(URI txBase, URI canonicalDepositInto, FcrepoClient client) {
+        private TxDepositor(final URI txBase, final URI canonicalDepositInto, final FcrepoClient client) {
             this.txBase = txBase;
 
             this.client = client;
@@ -148,7 +169,7 @@ public class FedoraDepositFactory implements DepositFactory {
         }
 
         @Override
-        public DepositedResource deposit(PackagedResource resource, URI parent) {
+        public DepositedResource deposit(final PackagedResource resource, final URI parent) {
 
             final URI depositInto = parent == null ? txDepositInto : parent;
 
@@ -176,7 +197,7 @@ public class FedoraDepositFactory implements DepositFactory {
             return deposited;
         }
 
-        private URI doDeposit(PackagedResource resource, URI parent) {
+        private URI doDeposit(final PackagedResource resource, final URI parent) {
             LOG.debug("Depositing into {} into {}", resource.getURI(), parent);
             try (InputStream content = resource.getBody();
                     FcrepoResponse r = client.post(parent)
@@ -193,14 +214,14 @@ public class FedoraDepositFactory implements DepositFactory {
             }
         }
 
-        private String fileNameIfBinary(PackagedResource resource) {
+        private String fileNameIfBinary(final PackagedResource resource) {
             if (NONRDFSOURCE.equals(resource.getType())) {
                 return fileName(resource);
             }
             return null;
         }
 
-        private void doReplace(PackagedResource resource, URI nonrdfsource, URI target) {
+        private void doReplace(final PackagedResource resource, final URI nonrdfsource, final URI target) {
 
             LOG.debug("Updating contents of {} with {}", target, resource.getURI());
 
@@ -216,7 +237,7 @@ public class FedoraDepositFactory implements DepositFactory {
             }
         }
 
-        private InputStream sparqlAdd(PackagedResource resource, URI into) throws IOException {
+        private InputStream sparqlAdd(final PackagedResource resource, final URI into) throws IOException {
 
             final ByteArrayOutputStream out = new ByteArrayOutputStream();
             out.write("INSERT DATA {\n".getBytes(UTF_8));
@@ -263,7 +284,7 @@ public class FedoraDepositFactory implements DepositFactory {
         }
 
         @Override
-        public void remap(URI toRemap, Map<URI, URI> localToRepository) {
+        public void remap(final URI toRemap, final Map<URI, URI> localToRepository) {
             final Model updatedModel = ModelFactory.createDefaultModel();
             final Model originalModel = ModelFactory.createDefaultModel();
 
@@ -329,7 +350,7 @@ public class FedoraDepositFactory implements DepositFactory {
             }
         }
 
-        private String withoutHash(String uri) {
+        private String withoutHash(final String uri) {
             if (uri.contains("#")) {
                 return uri.substring(0, uri.indexOf('#'));
             } else {
@@ -339,7 +360,7 @@ public class FedoraDepositFactory implements DepositFactory {
     }
 
     // Creates a SPARQL/Update patch which, when applied to the original model, result in the updated.
-    private static InputStream makeSparqlPatch(Model orig, Model updated) {
+    private static InputStream makeSparqlPatch(final Model orig, final Model updated) {
         try {
             final ByteArrayOutputStream body = new ByteArrayOutputStream();
 
@@ -369,7 +390,7 @@ public class FedoraDepositFactory implements DepositFactory {
 
     }
 
-    private static String fileName(PackagedResource resource) {
+    private static String fileName(final PackagedResource resource) {
 
         String name = new File(resource.getURI().getPath()).getName();
 
@@ -384,7 +405,7 @@ public class FedoraDepositFactory implements DepositFactory {
         }
     }
 
-    private void checkError(FcrepoResponse response) throws FcrepoOperationFailedException, IOException {
+    private void checkError(final FcrepoResponse response) throws FcrepoOperationFailedException, IOException {
         if (response.getStatusCode() >= 400) {
             throw new FcrepoOperationFailedException(response.getUrl(), response.getStatusCode(),
                     IOUtils.toString(response.getBody(), "utf8"));

@@ -13,21 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.impl;
 
-import org.apache.commons.io.IOUtils;
-
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RDFFormat;
-import org.apache.jena.riot.system.PrefixMapFactory;
-import org.dataconservancy.packaging.ingest.LdpPackageProvenanceGenerator;
-import org.dataconservancy.packaging.ingest.PackagedResource;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -41,12 +30,31 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.dataconservancy.packaging.ingest.LdpPackageProvenanceGenerator;
+import org.dataconservancy.packaging.ingest.PackagedResource;
+
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
+import org.apache.jena.riot.system.PrefixMapFactory;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+
+/**
+ * Generates package provenance.
+ *
+ * @author bbrosius@jhu.edu
+ */
 @Component(configurationPolicy = ConfigurationPolicy.IGNORE, immediate = true)
 public class PackageFileProvenanceGenerator implements LdpPackageProvenanceGenerator<File> {
+
     @Override
-    public PackagedResource generatePackageProvenance(File pkg, Map<String, String> uriMap) {
-        URI packageURI = pkg.toURI();
-        PackageProvenanceLdpResource resource = new PackageProvenanceLdpResource(packageURI);
+    public PackagedResource generatePackageProvenance(final File pkg, final Map<String, String> uriMap) {
+        final URI packageURI = pkg.toURI();
+        final PackageProvenanceLdpResource resource = new PackageProvenanceLdpResource(packageURI);
         resource.setType(PackagedResource.Type.NONRDFSOURCE);
 
         try {
@@ -56,49 +64,49 @@ public class PackageFileProvenanceGenerator implements LdpPackageProvenanceGener
                 mediaType = PackageFileAnalyzer.APPLICATION_OCTETSTREAM;
             }
             resource.setMediaType(mediaType);
-        } catch (FileNotFoundException e) {
+        } catch (final FileNotFoundException e) {
             throw new RuntimeException("Couldn't open input stream for package file: " + pkg.toString() + " .");
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException("Unable to get mime type for package file: " + pkg.toString() + " .");
         }
 
         try {
-            URI resourceURI = new URI(packageURI.getScheme(),
-                         packageURI.getHost(),
-                         packageURI.getPath(),
-                         "provenance");
+            final URI resourceURI = new URI(packageURI.getScheme(),
+                    packageURI.getHost(),
+                    packageURI.getPath(),
+                    "provenance");
             resource.setDescription(generateRdfProvenanceResource(uriMap, resourceURI));
-        } catch (URISyntaxException e) {
+        } catch (final URISyntaxException e) {
             e.printStackTrace();
         }
 
         return resource;
     }
 
-    //Creates an ldp resource that represents the URI map of archive URIs to package file URIs
-    private PackagedResource generateRdfProvenanceResource(Map<String, String> uriMap, URI uri) {
-        PackageProvenanceLdpResource rdfResource = new PackageProvenanceLdpResource(uri);
+    // Creates an ldp resource that represents the URI map of archive URIs to package file URIs
+    private PackagedResource generateRdfProvenanceResource(final Map<String, String> uriMap, final URI uri) {
+        final PackageProvenanceLdpResource rdfResource = new PackageProvenanceLdpResource(uri);
         rdfResource.setType(PackagedResource.Type.RDFSOURCE);
         rdfResource.setMediaType("text/turtle");
-        Model remModel = ModelFactory.createDefaultModel();
+        final Model remModel = ModelFactory.createDefaultModel();
 
-        //Loop through the uri map and create triples for each
-        Property derivedProperty = remModel.createProperty("http://www.w3.org/ns/prov#", "wasDerivedFrom");
-        for (String repositoryURI : uriMap.keySet()) {
-            Resource resource = remModel.createResource(repositoryURI);
+        // Loop through the uri map and create triples for each
+        final Property derivedProperty = remModel.createProperty("http://www.w3.org/ns/prov#", "wasDerivedFrom");
+        for (final String repositoryURI : uriMap.keySet()) {
+            final Resource resource = remModel.createResource(repositoryURI);
             resource.addProperty(derivedProperty, uriMap.get(repositoryURI));
         }
 
-        Map<String, String> prefixMap = new HashMap<>();
+        final Map<String, String> prefixMap = new HashMap<>();
         prefixMap.put("http://www.w3.org/ns/prov#", "prov");
-        //Now generate the input stream for the resource
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        // Now generate the input stream for the resource
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
         RDFDataMgr.createGraphWriter(RDFFormat.TTL).write(out, remModel.getGraph(),
-                                                          PrefixMapFactory.create(prefixMap),
-                                                          null,
-                                                          null);
+                PrefixMapFactory.create(prefixMap),
+                null,
+                null);
 
-        rdfResource.setBody(IOUtils.toInputStream("<> a <http://www.w3.org/ns/prov#Entity> ."));
+        rdfResource.setBody(new ByteArrayInputStream("<> a <http://www.w3.org/ns/prov#Entity> .".getBytes(UTF_8)));
         return rdfResource;
     }
 }

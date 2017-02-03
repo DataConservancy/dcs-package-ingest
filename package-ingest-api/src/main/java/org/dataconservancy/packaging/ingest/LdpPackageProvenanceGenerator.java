@@ -13,13 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest;
 
 import java.util.Map;
 
+/**
+ * Generates provenance for a package.
+ *
+ * @author bbrosius@jhu.edu
+ */
 public interface LdpPackageProvenanceGenerator<T> {
 
+    /**
+     * Generate provenance for the given package.
+     *
+     * @param pkg Physical package
+     * @param uriMapping Mapping of local to repository URIs.
+     * @return provenance resource to deposit.
+     */
     PackagedResource generatePackageProvenance(T pkg,
-                                          Map<String, String> uriMapping);
+            Map<String, String> uriMapping);
 
 }

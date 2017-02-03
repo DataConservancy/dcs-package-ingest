@@ -13,35 +13,60 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest;
 
 import java.io.InputStream;
-
 import java.net.URI;
-
 import java.util.Collection;
 
-/** Describes a package resource in terms of LDP semantics */
+/**
+ * Describes a package resource in terms of LDP semantics
+ *
+ * @author bbrosius@jhu.edu
+ */
 public interface PackagedResource {
 
-    /** LDP Resource type */
+    /**
+     * LDP Resource type.
+     *
+     * @return the type.
+     */
     public Type getType();
 
-    /** URI of this resource */
+    /**
+     * URI of this resource
+     *
+     * @return the URI.
+     */
     public URI getURI();
 
-    /** If a container, these are the children. If there are no children and empty list will be returned, but never null. */
+    /**
+     * If a container, these are the children. If there are no children and empty list will be returned, but never
+     * null.
+     *
+     * @return packaged resources
+     */
     public Collection<PackagedResource> getChildren();
 
-    /** Body of the LDP Resource, if RDF, presumed to be utf-8 encoded */
+    /**
+     * Body of the LDP Resource, if RDF, presumed to be utf-8 encoded.
+     *
+     * @return body of the resource.
+     */
     public InputStream getBody();
 
-    /** IANA media type stream */
+    /**
+     * IANA media type.
+     *
+     * @return Media type.
+     */
     public String getMediaType();
 
     /**
-     * If this is a NonRdfSource, there may be a descriptinve RDFSource
-     * containing its metadata.
+     * If this is a NonRdfSource, there may be a descriptinve RDFSource containing its metadata
+     *
+     * @return its description, or null.
      */
     public PackagedResource getDescription();
 

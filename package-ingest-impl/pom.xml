@@ -69,8 +69,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <!-- This is intentional, due to a bug in 2.19.x -->
-        <version>2.18.1</version>
         <executions>
           <execution>
             <goals>
@@ -91,6 +89,7 @@
       <plugin>
         <groupId>org.codehaus.cargo</groupId>
         <artifactId>cargo-maven2-plugin</artifactId>
+        <version>1.6.2</version>
         <configuration>
           <!-- Container configuration -->
           <deployer />
@@ -143,12 +142,6 @@
   </build>
 
   <dependencies>
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.compendium</artifactId>
-      <version>${osgi.version}</version>
-      <scope>provided</scope>
-    </dependency>
 
     <dependency>
       <groupId>org.osgi</groupId>
@@ -158,26 +151,10 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.tika</groupId>
-      <artifactId>tika-java7</artifactId>
-      <exclusions>
-        <exclusion>
-          <artifactId>*</artifactId>
-          <groupId>*</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.tika</groupId>
-      <artifactId>tika-bundle</artifactId>
-      <version>1.11</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.tika</groupId>
-      <artifactId>tika-core</artifactId>
-      <version>1.11</version>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.component.annotations</artifactId>
+      <version>1.3.0</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -189,18 +166,21 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-compress</artifactId>
+      <version>${commons-compress.version}</version>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
+      <version>${commons-io.version}</version>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.jena</groupId>
-      <artifactId>jena-osgi</artifactId>
+      <artifactId>jena-arq</artifactId>
+      <version>${jena.version}</version>
     </dependency>
 
     <!-- for OSGi -->
@@ -239,18 +219,21 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
+      <version>1.1.9</version>
       <scope>test</scope>
     </dependency>
 
@@ -267,7 +250,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
 
   </dependencies>
 

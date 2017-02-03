@@ -13,24 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.dataconservancy.packaging.impl;
 
-import org.dataconservancy.packaging.ingest.PackagedResource;
+package org.dataconservancy.packaging.impl;
 
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.dataconservancy.packaging.ingest.PackagedResource;
+
+/**
+ * Impl for provenance-containing resource.
+ *
+ * @author bbrosius@jhu.edu
+ */
 class PackageProvenanceLdpResource implements PackagedResource {
 
-    private URI uri;
+    private final URI uri;
+
     private Type type;
+
     private InputStream content;
+
     private String mediaType;
+
     private PackagedResource domainObjectDescription;
 
-    PackageProvenanceLdpResource(URI uri) {
+    PackageProvenanceLdpResource(final URI uri) {
         this.uri = uri;
     }
 
@@ -39,7 +49,7 @@ class PackageProvenanceLdpResource implements PackagedResource {
         return type;
     }
 
-    public void setType(Type type) {
+    public void setType(final Type type) {
         this.type = type;
     }
 
@@ -58,7 +68,7 @@ class PackageProvenanceLdpResource implements PackagedResource {
         return content;
     }
 
-    void setBody(InputStream body) {
+    void setBody(final InputStream body) {
         this.content = body;
     }
 
@@ -67,7 +77,7 @@ class PackageProvenanceLdpResource implements PackagedResource {
         return mediaType;
     }
 
-    void setMediaType(String mediaType) {
+    void setMediaType(final String mediaType) {
         this.mediaType = mediaType;
     }
 
@@ -76,7 +86,7 @@ class PackageProvenanceLdpResource implements PackagedResource {
         return domainObjectDescription;
     }
 
-    void setDescription(PackagedResource description) {
+    void setDescription(final PackagedResource description) {
         this.domainObjectDescription = description;
     }
 }

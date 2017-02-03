@@ -13,9 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest;
 
+/**
+ * Creates analyzers for packages
+ *
+ * @param T Physical form of package (e.g. File, InputStream, etc)
+ * @author bbrosius@jhu.edu
+ */
 public interface LdpPackageAnalyzerFactory<T> {
 
+    /**
+     * Create a new analyzer.
+     *
+     * @return New analyzer.
+     */
     LdpPackageAnalyzer<T> newAnalyzer();
 }
