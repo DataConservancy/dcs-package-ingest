@@ -35,22 +35,34 @@ public interface Depositor {
 
         public URI describedBy;
 
+        /** Empty constructur */
         public DepositedResource() {
 
         }
 
-        public DepositedResource(URI uri, URI describedBy) {
+        /**
+         * Deposited resource with explicit URIs.
+         *
+         * @param uri URI of deposited resource
+         * @param describedBy URI of binary discription resource, or null.
+         */
+        public DepositedResource(final URI uri, final URI describedBy) {
             this.uri = uri;
             this.describedBy = describedBy;
         }
 
+        /**
+         * Whether the deposited resource has a non-null description.
+         *
+         * @return true if there is a description.
+         */
         public boolean hasDescription() {
             return describedBy != null;
         }
     }
 
     /**
-     * Deposit the given resource.
+     * Deposit the given resource into a spacific container.
      *
      * @param packagedResource The resource to deposit
      * @param intoContainer URI of the parent container to deposit into
@@ -58,7 +70,13 @@ public interface Depositor {
      */
     public DepositedResource deposit(PackagedResource packagedResource, URI intoContainer);
 
-    public default DepositedResource deposit(PackagedResource resource) {
+    /**
+     * Deposit given packaged packaged resource into a default container.
+     *
+     * @param resource The resource to deposit
+     * @return URI(s) of deposited resources.
+     */
+    public default DepositedResource deposit(final PackagedResource resource) {
         return deposit(resource, null);
     }
 
@@ -70,7 +88,13 @@ public interface Depositor {
      */
     public void remap(URI toRemap, Map<URI, URI> localToRepository);
 
+    /**
+     * Commit all deposits to the repository.
+     */
     public void commit();
 
+    /**
+     * Rollback all commits
+     */
     public void rollback();
 }

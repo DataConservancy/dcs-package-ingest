@@ -13,14 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.ingest;
 
 import java.util.Collection;
 
+/**
+ * Analyzes a DCS package.
+ *
+ * @author bbrosius@jhu.edu
+ * @param T Physical form of package (e.g. File, InputStream, etc)
+ */
 public interface LdpPackageAnalyzer<T> {
 
-    public Collection<PackagedResource> getContainerRoots(T pkg);
+    /**
+     * Get root resources of the given package.
+     *
+     * @param pkg physical package.
+     * @return Collection of resources that are "roots" of the given pavkage (i.e. are not contained by any other
+     *         resource in the package.
+     */
+    public Collection<PackagedResource> getContainerRoots(final T pkg);
 
+    /**
+     * Clean up the package extraction directory.
+     */
     void cleanUpExtractionDirectory();
 
 }

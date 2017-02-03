@@ -13,7 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.impl;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
@@ -24,44 +33,34 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 /**
  * Service for opening up a package file for ingest.
- *
+ * <p>
  * This code is duplicated from OpenPackageServiceImpl in the Package Tool codebase.
+ * </p>
+ *
+ * @author mpatton@jhu.edu
  */
 public class OpenPackageService {
 
     /**
      * Extract contents of an archive.
      *
-     * @param dest_dir
-     *            Destination to write archive content.
-     * @param is
-     *            Archive file.
+     * @param dest_dir Destination to write archive content.
+     * @param is Archive file.
      * @return Name of package base directory in dest_dir
      * @throws ArchiveException if there is an error creating the ArchiveInputStream
-     * @throws IOException  if there is more than one package root
+     * @throws IOException if there is more than one package root
      */
-    private String extract(File dest_dir, InputStream is) throws ArchiveException, IOException {
+    private String extract(final File dest_dir, final InputStream i) throws ArchiveException, IOException {
         // Apache commons compress requires buffered input streams
 
-        if (!is.markSupported()) {
-            is = new BufferedInputStream(is);
-        }
-
-        // If file is compressed, uncompress.
+        InputStream is;
 
         try {
-            is = new CompressorStreamFactory().createCompressorInputStream(is);
-        } catch (CompressorException e) {
+            is = new CompressorStreamFactory().createCompressorInputStream(new BufferedInputStream(i));
+        } catch (final CompressorException e) {
+            throw new IOException("Could not create compressed input stream", e);
         }
 
         // Extract entries from archive
@@ -72,14 +71,14 @@ public class OpenPackageService {
 
         String archive_base = null;
 
-        ArchiveInputStream ais = new ArchiveStreamFactory().createArchiveInputStream(is);
+        final ArchiveInputStream ais = new ArchiveStreamFactory().createArchiveInputStream(is);
         ArchiveEntry entry;
 
         while ((entry = ais.getNextEntry()) != null) {
-            
-            File file = extract(dest_dir, entry, ais);
 
-            String root = get_root_file_name(file);
+            final File file = extract(dest_dir, entry, ais);
+
+            final String root = get_root_file_name(file);
 
             if (archive_base == null) {
                 archive_base = root;
@@ -91,28 +90,29 @@ public class OpenPackageService {
         return archive_base;
     }
 
-    private String get_root_file_name(File file) {
+    private String get_root_file_name(final File file) {
         String root;
+        File f = file;
 
         do {
             root = file.getName();
-        } while ((file = file.getParentFile()) != null);
+        } while ((f = f.getParentFile()) != null);
 
         return root;
     }
 
-    private String extract(File dest_dir, File file) throws ArchiveException, IOException {
+    private String extract(final File dest_dir, final File file) throws ArchiveException, IOException {
         try (InputStream is = new FileInputStream(file)) {
             return extract(dest_dir, is);
         }
     }
 
     // Extract entry in an archive and return relative file to extracted entry
-    private File extract(File dest_dir, ArchiveEntry entry, ArchiveInputStream ais) throws IOException {
-        String path = FilenameUtils.separatorsToSystem(entry.getName());
-        
+    private File extract(final File dest_dir, final ArchiveEntry entry, final ArchiveInputStream ais)
+            throws IOException {
+        final String path = FilenameUtils.separatorsToSystem(entry.getName());
 
-        File file = new File(dest_dir, path);
+        final File file = new File(dest_dir, path);
 
         if (entry.isDirectory()) {
             file.mkdirs();
@@ -123,20 +123,29 @@ public class OpenPackageService {
 
             try (OutputStream os = new FileOutputStream(file)) {
                 IOUtils.copyLarge(ais, os, 0, entry.getSize());
-            } catch (IOException e) {
-                throw new IOException("Couldn't create " + file.toString() + ". Please make sure you have write access for the extract directory.", e);
+            } catch (final IOException e) {
+                throw new IOException("Couldn't create " + file.toString() +
+                        ". Please make sure you have write access for the extract directory.", e);
             }
         }
 
         return new File(path);
     }
 
-    public File openPackage(File staging_dir, File file) throws IOException {
+    /**
+     * Open a package
+     *
+     * @param staging_dir Staging directory.
+     * @param file Package fine
+     * @return File for the extracted package location.
+     * @throws IOException if there is a problem expanding files into the directory.
+     */
+    public File openPackage(final File staging_dir, final File file) throws IOException {
         try {
-            String archive_base = extract(staging_dir, file);
+            final String archive_base = extract(staging_dir, file);
             return new File(staging_dir, archive_base);
 
-        } catch (ArchiveException e) {
+        } catch (final ArchiveException e) {
             throw new IOException(e);
         }
     }

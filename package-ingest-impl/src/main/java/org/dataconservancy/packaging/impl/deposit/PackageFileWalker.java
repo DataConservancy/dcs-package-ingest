@@ -40,21 +40,26 @@ public class PackageFileWalker implements PackageWalkerFactory<File> {
 
     LdpPackageAnalyzerFactory<File> analyzerFactory;
 
+    /**
+     * Set the analyzer factory.
+     *
+     * @param analyzerFactory the package analyzer factory.
+     */
     @Reference
-    public void setAnalyzerFactory(LdpPackageAnalyzerFactory<File> analyzerFactory) {
+    public void setAnalyzerFactory(final LdpPackageAnalyzerFactory<File> analyzerFactory) {
         this.analyzerFactory = analyzerFactory;
     }
 
     @Override
-    public PackageWalker newWalker(File pkgfile) {
+    public PackageWalker newWalker(final File pkgfile) {
         final LdpPackageAnalyzer<File> analyzer = analyzerFactory.newAnalyzer();
 
         return new PackageWalker() {
 
             @Override
-            public void walk(Depositor depositer, DepositNotifier notifier) {
+            public void walk(final Depositor depositor, final DepositNotifier notifier) {
                 try {
-                    doWalk(depositer, notifier, analyzer.getContainerRoots(pkgfile), null);
+                    doWalk(depositor, notifier, analyzer.getContainerRoots(pkgfile), null);
                 } finally {
                     analyzer.cleanUpExtractionDirectory();
                 }
@@ -62,9 +67,9 @@ public class PackageFileWalker implements PackageWalkerFactory<File> {
         };
     }
 
-    private static void doWalk(Depositor depositer, DepositNotifier notify,
-            Collection<PackagedResource> packedResources,
-            URI into) {
+    private static void doWalk(final Depositor depositer, final DepositNotifier notify,
+            final Collection<PackagedResource> packedResources,
+            final URI into) {
 
         for (final PackagedResource packagedResource : packedResources) {
 

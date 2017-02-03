@@ -13,34 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.dataconservancy.packaging.impl;
-
-import org.dataconservancy.packaging.ingest.PackagedResource;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.File;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.dataconservancy.packaging.ingest.PackagedResource;
+
+import org.junit.Before;
+import org.junit.Test;
+
+/**
+ * @author bbrosius@jhu.edu
+ */
 public class PackageFileProvenanceGeneratorTest {
+
     private PackageFileProvenanceGenerator underTest;
+
     private File packageFile;
+
     private Map<String, String> testURIMap;
 
     @Before
     public void setup() {
         underTest = new PackageFileProvenanceGenerator();
 
-        //Since we don't actually need the file to be a package file we'll just use a test resource.
-        URL packageUrl = PackageFileAnalyzerTest.class.getResource("/test_pkg/bagit.txt");
+        // Since we don't actually need the file to be a package file we'll just use a test resource.
+        final URL packageUrl = PackageFileAnalyzerTest.class.getResource("/test_pkg/bagit.txt");
         packageFile = new File(packageUrl.getPath());
 
         testURIMap = new HashMap<>();
@@ -50,7 +57,7 @@ public class PackageFileProvenanceGeneratorTest {
 
     @Test
     public void testProvenanceGeneration() {
-        PackagedResource packageResource = underTest.generatePackageProvenance(packageFile, testURIMap);
+        final PackagedResource packageResource = underTest.generatePackageProvenance(packageFile, testURIMap);
 
         assertNotNull(packageResource);
 
@@ -61,7 +68,7 @@ public class PackageFileProvenanceGeneratorTest {
 
         assertNotNull(packageResource.getDescription());
 
-        PackagedResource provenanceResource = packageResource.getDescription();
+        final PackagedResource provenanceResource = packageResource.getDescription();
         assertNotNull(provenanceResource.getBody());
         assertNull(provenanceResource.getDescription());
         assertTrue(provenanceResource.getChildren().isEmpty());

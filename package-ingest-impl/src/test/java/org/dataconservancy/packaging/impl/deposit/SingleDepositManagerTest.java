@@ -19,8 +19,8 @@ package org.dataconservancy.packaging.impl.deposit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -46,12 +46,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 /**
  * @author apb@jhu.edu
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class SingleDepositManagerTest {
 
@@ -123,13 +122,12 @@ public class SingleDepositManagerTest {
 
         when(binary.getURI()).thenReturn(localBinaryUri);
         when(binary.getType()).thenReturn(Type.NONRDFSOURCE);
-        when(binary.getDescription()).thenReturn(binaryDescription);
 
         when(container.getURI()).thenReturn(localContainerUri);
         when(container.getType()).thenReturn(Type.CONTAINER);
 
         doAnswer(i -> {
-            final DepositNotifier notifier = i.getArgumentAt(1, DepositNotifier.class);
+            final DepositNotifier notifier = i.getArgument(1);
 
             notifier.onDeposit(depositedBinaryUri, binary);
             notifier.onDeposit(depositedBinaryDescriptionUri, binaryDescription);
@@ -139,8 +137,8 @@ public class SingleDepositManagerTest {
         }).when(walker).walk(any(Depositor.class), any(DepositNotifier.class));
 
         doAnswer(i -> {
-            final URI uri = i.getArgumentAt(0, URI.class);
-            final Map map = i.getArgumentAt(1, Map.class);
+            final URI uri = i.getArgument(0);
+            final Map map = i.getArgument(1);
 
             // Make sure the URI is one of the deposited URIs
             assertTrue(Arrays.asList(depositedContainerUri, depositedBinaryUri, depositedBinaryDescriptionUri)

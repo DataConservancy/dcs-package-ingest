@@ -51,21 +51,26 @@
 
   <dependencies>
 
+    <!-- Exclude these because they're provided by Karaf, or we need OSGI-specific 
+      variants -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+      <version>1.7.22</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.jena</groupId>
       <artifactId>jena-core</artifactId>
+      <version>${jena.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.jena</groupId>
       <artifactId>jena-arq</artifactId>
+      <version>${jena.version}</version>
       <scope>provided</scope>
     </dependency>
 

@@ -44,18 +44,28 @@ public class SingleDepositManager<T> implements PackageDepositManager<T> {
 
     DepositFactory depositFactory;
 
+    /**
+     * Set the walker factory.
+     *
+     * @param wf the walker factory.
+     */
     @Reference
-    public void setWalkerFactory(PackageWalkerFactory<T> wf) {
+    public void setWalkerFactory(final PackageWalkerFactory<T> wf) {
         this.walkerFactory = wf;
     }
 
+    /**
+     * Set the deposit factory.
+     *
+     * @param df deposit factory.
+     */
     @Reference
-    public void setDepositFactory(DepositFactory df) {
+    public void setDepositFactory(final DepositFactory df) {
         this.depositFactory = df;
     }
 
     @Override
-    public void depositPackageInto(URI resource, T pkg, Map<String, Object> context) {
+    public void depositPackageInto(final URI resource, final T pkg, final Map<String, Object> context) {
 
         final Map<URI, URI> localUriToDeposited = new HashMap<>();
         final List<URI> toUpdate = new ArrayList<>();

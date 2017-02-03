@@ -40,6 +40,8 @@ import org.ops4j.pax.exam.options.MavenUrlReference;
  * <p>
  * This class contains the boilerplate to set up Karaf ITs.
  * </p>
+ *
+ * @author apb@jhu.edu
  */
 public interface KarafIT {
 

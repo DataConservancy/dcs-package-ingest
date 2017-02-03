@@ -17,9 +17,10 @@
 package org.dataconservancy.packaging.impl.deposit;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,18 +39,16 @@ import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.Depositor.DepositedResource;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackagedResource;
-import org.dataconservancy.packaging.ingest.PackagedResource.Type;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 /**
  * @author apb@jhu.edu
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class PackageFileWalkerTest {
 
     @Mock
@@ -83,14 +82,8 @@ public class PackageFileWalkerTest {
 
     @Before
     public void setUp() {
-        initContainer(root1, "root1");
-        initContainer(root2, "root2");
-        initContainer(child1, "child1");
-        when(binaryDescription.getURI()).thenReturn(URI.create("test:binaryDescription"));
-        when(binaryDescription.getType()).thenReturn(Type.RDFSOURCE);
-        when(binary.getURI()).thenReturn(URI.create("test:binary"));
+        ;
         when(binary.getDescription()).thenReturn(binaryDescription);
-        when(binary.getType()).thenReturn(Type.NONRDFSOURCE);
 
         when(root1.getChildren()).thenReturn(Arrays.asList(child1));
         when(root2.getChildren()).thenReturn(Collections.emptyList());
@@ -101,18 +94,13 @@ public class PackageFileWalkerTest {
         toTest.setAnalyzerFactory(analyzerFactory);
     }
 
-    private void initContainer(PackagedResource container, String id) {
-        when(container.getURI()).thenReturn(URI.create("test:" + id));
-        when(container.getType()).thenReturn(Type.CONTAINER);
-    }
-
     @Test
     public void allObjectsepositedTest() {
         final List<PackagedResource> depositedResources = new ArrayList<>();
         final PackageWalker walker = toTest.newWalker(new File("whatever"));
 
-        when(deposit.deposit(any(PackagedResource.class), any(URI.class))).thenAnswer(i -> {
-            depositedResources.add(i.getArgumentAt(0, PackagedResource.class));
+        when(deposit.deposit(any(PackagedResource.class), nullable(URI.class))).thenAnswer(i -> {
+            depositedResources.add(i.getArgument(0));
             return new DepositedResource();
         });
 
@@ -133,9 +121,9 @@ public class PackageFileWalkerTest {
         final URI depositedRoot1 = URI.create("deposit:root1");
         final URI depositedRoot2 = URI.create("deposit:root2");
         final URI depositedChild1 = URI.create("deposited:child1");
-        when(deposit.deposit(eq(root1), isNull(URI.class)))
+        when(deposit.deposit(eq(root1), isNull()))
                 .thenReturn(new DepositedResource(depositedRoot1, null));
-        when(deposit.deposit(eq(root2), isNull(URI.class)))
+        when(deposit.deposit(eq(root2), isNull()))
                 .thenReturn(new DepositedResource(depositedRoot2, null));
         when(deposit.deposit(eq(child1), eq(depositedRoot1)))
                 .thenReturn(new DepositedResource(depositedChild1, null));
@@ -158,9 +146,9 @@ public class PackageFileWalkerTest {
         final URI depositedBinaryURI = URI.create("deposited:binary");
         final URI depositedBinaryDescriptionURI = URI.create("deposited:binaryDescription");
 
-        when(deposit.deposit(eq(root1), isNull(URI.class)))
+        when(deposit.deposit(eq(root1), isNull()))
                 .thenReturn(new DepositedResource(depositedRoot1, null));
-        when(deposit.deposit(eq(root2), isNull(URI.class)))
+        when(deposit.deposit(eq(root2), isNull()))
                 .thenReturn(new DepositedResource(depositedRoot2, null));
         when(deposit.deposit(eq(child1), eq(depositedRoot1)))
                 .thenReturn(new DepositedResource(depositedChild1, null));
