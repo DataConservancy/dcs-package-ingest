@@ -37,6 +37,8 @@
     <module>package-ingest-impl</module>
     <module>package-ingest-api</module>
     <module>package-ingest-karaf</module>
+    <module>package-ingest-http</module>
+    <module>package-ingest-jar</module>
   </modules>
 
   <!-- Properties ================================================ -->
