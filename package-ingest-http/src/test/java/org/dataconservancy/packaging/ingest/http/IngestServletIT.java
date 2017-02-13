@@ -52,6 +52,7 @@ public class IngestServletIT {
     @BeforeClass
     public static void setUp() throws Exception {
         server = new Server(8080);
+
         final ServletContextHandler servletContext = new ServletContextHandler();
         servletContext.setContextPath("/");
         servletContext.setBaseResource(Resource.newClassPathResource("/index.html"));

@@ -29,8 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -137,31 +135,6 @@ public class IngestServlet extends HttpServlet {
     }
 
     private static void analyzeArchive(final AsyncContext cxt) {
-
-        cxt.addListener(new AsyncListener() {
-
-            @Override
-            public void onTimeout(final AsyncEvent event) throws IOException {
-                LOG.info("timeout", event);
-
-            }
-
-            @Override
-            public void onStartAsync(final AsyncEvent event) throws IOException {
-                // TODO Auto-generated method stub
-
-            }
-
-            @Override
-            public void onError(final AsyncEvent event) throws IOException {
-                LOG.warn("Error!", event.getThrowable());
-            }
-
-            @Override
-            public void onComplete(final AsyncEvent event) throws IOException {
-                LOG.warn("Done!");
-            }
-        });
 
         final HttpServletResponse response = response(cxt);
         response.setStatus(SC_ACCEPTED);
