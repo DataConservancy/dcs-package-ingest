@@ -41,6 +41,7 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.slf4j.Logger;
@@ -64,6 +65,8 @@ public class IngestServlet extends HttpServlet {
         LOG.info("Async supported? " + req.isAsyncSupported());
         LOG.info("Async started? " + req.isAsyncStarted());
         final AsyncContext cxt = req.startAsync();
+        cxt.setTimeout(0);
+
         exe.execute(() -> {
             final HttpServletResponse response = response(cxt);
             response.setStatus(SC_OK);
@@ -103,6 +106,7 @@ public class IngestServlet extends HttpServlet {
         LOG.info("Async supported? " + req.isAsyncSupported());
         LOG.info("Async started? " + req.isAsyncStarted());
         final AsyncContext cxt = req.startAsync();
+        cxt.setTimeout(0);
 
         exe.execute(() -> analyzeArchive(cxt));
 
@@ -120,7 +124,7 @@ public class IngestServlet extends HttpServlet {
         try {
             return new ArchiveStreamFactory().createArchiveInputStream(buffered(in));
         } catch (final ArchiveException e) {
-            throw new ServletException(e);
+            return new TarArchiveInputStream(in);
         }
     }
 
@@ -175,7 +179,7 @@ public class IngestServlet extends HttpServlet {
             for (ArchiveEntry entry = in.getNextEntry(); entry != null; entry = in.getNextEntry()) {
                 out.println("event: entry");
                 out.println("data: " + entry.getName());
-                out.println("\n");
+                out.println();
                 out.flush();
                 response.flushBuffer();
             }
