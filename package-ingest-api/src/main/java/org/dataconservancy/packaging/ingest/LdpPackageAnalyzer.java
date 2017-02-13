@@ -16,15 +16,15 @@
 
 package org.dataconservancy.packaging.ingest;
 
+import java.io.InputStream;
 import java.util.Collection;
 
 /**
  * Analyzes a DCS package.
  *
  * @author bbrosius@jhu.edu
- * @param T Physical form of package (e.g. File, InputStream, etc)
  */
-public interface LdpPackageAnalyzer<T> {
+public interface LdpPackageAnalyzer {
 
     /**
      * Get root resources of the given package.
@@ -33,7 +33,7 @@ public interface LdpPackageAnalyzer<T> {
      * @return Collection of resources that are "roots" of the given pavkage (i.e. are not contained by any other
      *         resource in the package.
      */
-    public Collection<PackagedResource> getContainerRoots(final T pkg);
+    public Collection<PackagedResource> getContainerRoots(final InputStream pkg);
 
     /**
      * Clean up the package extraction directory.

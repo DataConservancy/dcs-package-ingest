@@ -50,7 +50,7 @@ import org.apache.jena.rdf.model.ResourceFactory;
  * @author bbrosius@jhu.edu
  */
 public class PackageFileAnalyzer
-        implements LdpPackageAnalyzer<File> {
+        implements LdpPackageAnalyzer {
 
     public static final String PARAM_EXTRACT_DIR = "pkg.extract.dir";
 
@@ -92,7 +92,7 @@ public class PackageFileAnalyzer
     }
 
     @Override
-    public Collection<PackagedResource> getContainerRoots(final File pkg) {
+    public Collection<PackagedResource> getContainerRoots(final InputStream pkg) {
         final Map<URI, PackagedResource> packageContainerResources = new HashMap<>();
         final List<URI> visitedChildContainers = new ArrayList<>();
         try {

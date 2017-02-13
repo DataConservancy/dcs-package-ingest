@@ -16,7 +16,7 @@
 
 package org.dataconservancy.packaging.impl.deposit;
 
-import java.io.File;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Collection;
 
@@ -36,9 +36,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author apb@jhu.edu
  */
 @Component(immediate = true)
-public class PackageFileWalker implements PackageWalkerFactory<File> {
+public class DefaultPackageWalkerFactory implements PackageWalkerFactory {
 
-    LdpPackageAnalyzerFactory<File> analyzerFactory;
+    LdpPackageAnalyzerFactory analyzerFactory;
 
     /**
      * Set the analyzer factory.
@@ -46,20 +46,20 @@ public class PackageFileWalker implements PackageWalkerFactory<File> {
      * @param analyzerFactory the package analyzer factory.
      */
     @Reference
-    public void setAnalyzerFactory(final LdpPackageAnalyzerFactory<File> analyzerFactory) {
+    public void setAnalyzerFactory(final LdpPackageAnalyzerFactory analyzerFactory) {
         this.analyzerFactory = analyzerFactory;
     }
 
     @Override
-    public PackageWalker newWalker(final File pkgfile) {
-        final LdpPackageAnalyzer<File> analyzer = analyzerFactory.newAnalyzer();
+    public PackageWalker newWalker(final InputStream pkg) {
+        final LdpPackageAnalyzer analyzer = analyzerFactory.newAnalyzer();
 
         return new PackageWalker() {
 
             @Override
             public void walk(final Depositor depositor, final DepositNotifier notifier) {
                 try {
-                    doWalk(depositor, notifier, analyzer.getContainerRoots(pkgfile), null);
+                    doWalk(depositor, notifier, analyzer.getContainerRoots(pkg), null);
                 } finally {
                     analyzer.cleanUpExtractionDirectory();
                 }

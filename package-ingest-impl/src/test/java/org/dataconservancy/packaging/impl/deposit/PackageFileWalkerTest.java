@@ -25,7 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +50,9 @@ import org.mockito.Mock;
  */
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class PackageFileWalkerTest {
+
+    @Mock
+    InputStream stream;
 
     @Mock
     PackagedResource root1;
@@ -78,7 +81,7 @@ public class PackageFileWalkerTest {
     @Mock
     PackageFileAnalyzer analyzer;
 
-    PackageFileWalker toTest = new PackageFileWalker();
+    DefaultPackageWalkerFactory toTest = new DefaultPackageWalkerFactory();
 
     @Before
     public void setUp() {
@@ -89,7 +92,7 @@ public class PackageFileWalkerTest {
         when(root2.getChildren()).thenReturn(Collections.emptyList());
         when(child1.getChildren()).thenReturn(Arrays.asList(binary));
 
-        when(analyzer.getContainerRoots(any(File.class))).thenReturn(Arrays.asList(root1, root2));
+        when(analyzer.getContainerRoots(any(InputStream.class))).thenReturn(Arrays.asList(root1, root2));
         when(analyzerFactory.newAnalyzer()).thenReturn(analyzer);
         toTest.setAnalyzerFactory(analyzerFactory);
     }
@@ -97,7 +100,7 @@ public class PackageFileWalkerTest {
     @Test
     public void allObjectsepositedTest() {
         final List<PackagedResource> depositedResources = new ArrayList<>();
-        final PackageWalker walker = toTest.newWalker(new File("whatever"));
+        final PackageWalker walker = toTest.newWalker(stream);
 
         when(deposit.deposit(any(PackagedResource.class), nullable(URI.class))).thenAnswer(i -> {
             depositedResources.add(i.getArgument(0));
@@ -116,7 +119,7 @@ public class PackageFileWalkerTest {
     @Test
     public void depositedInRightContainersTest() {
 
-        final PackageWalker walker = toTest.newWalker(new File("whatever"));
+        final PackageWalker walker = toTest.newWalker(stream);
 
         final URI depositedRoot1 = URI.create("deposit:root1");
         final URI depositedRoot2 = URI.create("deposit:root2");
@@ -138,7 +141,7 @@ public class PackageFileWalkerTest {
 
     @Test
     public void notificationTest() {
-        final PackageWalker walker = toTest.newWalker(new File("whatever"));
+        final PackageWalker walker = toTest.newWalker(stream);
 
         final URI depositedRoot1 = URI.create("deposit:root1");
         final URI depositedRoot2 = URI.create("deposit:root2");

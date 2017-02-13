@@ -22,11 +22,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -48,17 +50,18 @@ public class PackageFileAnalyzerTest {
 
     private PackageFileAnalyzer underTest;
 
-    private File testPackage;
+    private final InputStream packageStream = mock(InputStream.class);
 
     private static final String TURTLE_MEDIA_TYPE = "text/turtle";
 
     @Before
     public void setup() throws IOException {
         final URL packageUrl = PackageFileAnalyzerTest.class.getResource("/test_pkg");
+        final File testPackage;
         testPackage = new File(packageUrl.getPath());
 
         final OpenPackageService openPackageService = mock(OpenPackageService.class);
-        when(openPackageService.openPackage(any(File.class), any(File.class))).thenReturn(testPackage);
+        when(openPackageService.openPackage(any(File.class), eq(packageStream))).thenReturn(testPackage);
 
         underTest = new PackageFileAnalyzer(openPackageService, testPackage.getParentFile());
     }
@@ -66,7 +69,7 @@ public class PackageFileAnalyzerTest {
     @Test
     public void testPackageAnalyzer() throws URISyntaxException {
         // Doesn't matter what file we pass here since we're mocking the open package code.
-        final Collection<PackagedResource> packageResources = underTest.getContainerRoots(testPackage);
+        final Collection<PackagedResource> packageResources = underTest.getContainerRoots(packageStream);
 
         // The root container, and a binary that has no container
         assertEquals(2, packageResources.size());
@@ -84,7 +87,7 @@ public class PackageFileAnalyzerTest {
     @Test
     public void testEmptyContainer() throws URISyntaxException {
         // Doesn't matter what file we pass here since we're mocking the open package code.
-        final Collection<PackagedResource> packageResources = underTest.getContainerRoots(testPackage);
+        final Collection<PackagedResource> packageResources = underTest.getContainerRoots(packageStream);
 
         // The root container, and a binary that has no container
         assertEquals(2, packageResources.size());
@@ -111,7 +114,7 @@ public class PackageFileAnalyzerTest {
     @Test
     public void testFileResource() throws URISyntaxException {
         // Doesn't matter what file we pass here since we're mocking the open package code.
-        final Collection<PackagedResource> packageResources = underTest.getContainerRoots(testPackage);
+        final Collection<PackagedResource> packageResources = underTest.getContainerRoots(packageStream);
 
         // The root container, and a binary that has no container
         assertEquals(2, packageResources.size());
@@ -147,7 +150,7 @@ public class PackageFileAnalyzerTest {
     @Test
     public void testBinaryResourceNoContainer() throws Exception {
         // Doesn't matter what file we pass here since we're mocking the open package code.
-        final Collection<PackagedResource> packageResources = underTest.getContainerRoots(testPackage);
+        final Collection<PackagedResource> packageResources = underTest.getContainerRoots(packageStream);
 
         // The root container, and a binary that has no container
         assertEquals(2, packageResources.size());

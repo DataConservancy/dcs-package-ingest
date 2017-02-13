@@ -48,7 +48,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @Designate(ocd = PackageFileAnalyzerFactoryConfig.class)
 @Component(configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true)
 public class PackageFileAnalyzerFactory
-        implements LdpPackageAnalyzerFactory<File> {
+        implements LdpPackageAnalyzerFactory {
 
     private File extractBaseDir;
 
@@ -74,7 +74,7 @@ public class PackageFileAnalyzerFactory
     }
 
     @Override
-    public LdpPackageAnalyzer<File> newAnalyzer() {
+    public LdpPackageAnalyzer newAnalyzer() {
 
         // Reasonablbe default in case it's not set
         if (extractBaseDir == null) {

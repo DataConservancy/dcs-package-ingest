@@ -16,6 +16,7 @@
 
 package org.dataconservancy.packaging.impl.deposit;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,9 +39,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author apb@jhu.edu
  */
 @Component(immediate = true)
-public class SingleDepositManager<T> implements PackageDepositManager<T> {
+public class SingleDepositManager implements PackageDepositManager {
 
-    PackageWalkerFactory<T> walkerFactory;
+    PackageWalkerFactory walkerFactory;
 
     DepositFactory depositFactory;
 
@@ -50,7 +51,7 @@ public class SingleDepositManager<T> implements PackageDepositManager<T> {
      * @param wf the walker factory.
      */
     @Reference
-    public void setWalkerFactory(final PackageWalkerFactory<T> wf) {
+    public void setWalkerFactory(final PackageWalkerFactory wf) {
         this.walkerFactory = wf;
     }
 
@@ -65,7 +66,7 @@ public class SingleDepositManager<T> implements PackageDepositManager<T> {
     }
 
     @Override
-    public void depositPackageInto(final URI resource, final T pkg, final Map<String, Object> context) {
+    public void depositPackageInto(final URI resource, final InputStream pkg, final Map<String, Object> context) {
 
         final Map<URI, URI> localUriToDeposited = new HashMap<>();
         final List<URI> toUpdate = new ArrayList<>();

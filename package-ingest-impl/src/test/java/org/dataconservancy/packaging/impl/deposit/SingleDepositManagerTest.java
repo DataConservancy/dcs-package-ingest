@@ -28,7 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,7 +55,10 @@ import org.mockito.Mock;
 public class SingleDepositManagerTest {
 
     @Mock
-    private PackageWalkerFactory<File> walkerFactory;
+    InputStream stream;
+
+    @Mock
+    private PackageWalkerFactory walkerFactory;
 
     @Mock
     private PackageWalker walker;
@@ -74,14 +77,14 @@ public class SingleDepositManagerTest {
         toTest.setDepositFactory(depositFactory);
         toTest.setWalkerFactory(walkerFactory);
 
-        when(walkerFactory.newWalker(any(File.class))).thenReturn(walker);
+        when(walkerFactory.newWalker(any(InputStream.class))).thenReturn(walker);
         when(depositFactory.newDepositor(any(URI.class), any(Map.class))).thenReturn(depositer);
 
     }
 
     @Test
     public void commitTest() {
-        toTest.depositPackageInto(URI.create("test:nowhere"), new File(""), Collections.emptyMap());
+        toTest.depositPackageInto(URI.create("test:nowhere"), stream, Collections.emptyMap());
 
         verify(depositer).commit();
         verify(depositer, times(0)).rollback();
@@ -92,7 +95,7 @@ public class SingleDepositManagerTest {
         doThrow(new RuntimeException()).when(walker).walk(any(Depositor.class), any(DepositNotifier.class));
 
         try {
-            toTest.depositPackageInto(URI.create("test:nowhere"), new File(""), Collections.emptyMap());
+            toTest.depositPackageInto(URI.create("test:nowhere"), stream, Collections.emptyMap());
             fail("Should have thrown exception");
         } catch (final Exception e) {
             // expected
@@ -152,7 +155,7 @@ public class SingleDepositManagerTest {
             return null;
         }).when(depositer).remap(any(URI.class), any(Map.class));
 
-        toTest.depositPackageInto(URI.create("test:nowhere"), new File(""), Collections.emptyMap());
+        toTest.depositPackageInto(URI.create("test:nowhere"), stream, Collections.emptyMap());
 
         // The container and binary description should be remapped
         verify(depositer).remap(eq(depositedContainerUri), any(Map.class));

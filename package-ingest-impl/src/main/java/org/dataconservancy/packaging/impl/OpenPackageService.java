@@ -149,4 +149,20 @@ public class OpenPackageService {
             throw new IOException(e);
         }
     }
+
+    /**
+     * Open a package
+     *
+     * @param staging_dir Staging directory.
+     * @param stream package stream.
+     * @return File for the extracted package location.
+     * @throws IOException if there is a problem expanding files into the directory.
+     */
+    public File openPackage(final File staging_dir, final InputStream stream) throws IOException {
+        try {
+            return new File(staging_dir, extract(staging_dir, stream));
+        } catch (final ArchiveException e) {
+            throw new IOException(e);
+        }
+    }
 }
