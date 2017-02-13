@@ -34,7 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
+import org.dataconservancy.packaging.ingest.PackageAnalyzer;
 import org.dataconservancy.packaging.ingest.PackagedResource;
 
 import org.apache.jena.atlas.RuntimeIOException;
@@ -49,8 +49,8 @@ import org.apache.jena.rdf.model.ResourceFactory;
 /**
  * @author bbrosius@jhu.edu
  */
-public class PackageFileAnalyzer
-        implements LdpPackageAnalyzer {
+public class DcsPackageAnalyzer
+        implements PackageAnalyzer {
 
     public static final String PARAM_EXTRACT_DIR = "pkg.extract.dir";
 
@@ -86,7 +86,7 @@ public class PackageFileAnalyzer
      * @param openPackageService Service to extract/open the package.
      * @param extractDir Extraction directory.
      */
-    public PackageFileAnalyzer(final OpenPackageService openPackageService, final File extractDir) {
+    public DcsPackageAnalyzer(final OpenPackageService openPackageService, final File extractDir) {
         this.packageService = openPackageService;
         this.extractDir = extractDir;
     }

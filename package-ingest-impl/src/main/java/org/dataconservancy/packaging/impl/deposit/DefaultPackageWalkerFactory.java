@@ -23,8 +23,8 @@ import java.util.Collection;
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.Depositor.DepositedResource;
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
+import org.dataconservancy.packaging.ingest.PackageAnalyzer;
+import org.dataconservancy.packaging.ingest.PackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackageWalkerFactory;
 import org.dataconservancy.packaging.ingest.PackagedResource;
@@ -38,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(immediate = true)
 public class DefaultPackageWalkerFactory implements PackageWalkerFactory {
 
-    LdpPackageAnalyzerFactory analyzerFactory;
+    PackageAnalyzerFactory analyzerFactory;
 
     /**
      * Set the analyzer factory.
@@ -46,13 +46,13 @@ public class DefaultPackageWalkerFactory implements PackageWalkerFactory {
      * @param analyzerFactory the package analyzer factory.
      */
     @Reference
-    public void setAnalyzerFactory(final LdpPackageAnalyzerFactory analyzerFactory) {
+    public void setAnalyzerFactory(final PackageAnalyzerFactory analyzerFactory) {
         this.analyzerFactory = analyzerFactory;
     }
 
     @Override
     public PackageWalker newWalker(final InputStream pkg) {
-        final LdpPackageAnalyzer analyzer = analyzerFactory.newAnalyzer();
+        final PackageAnalyzer analyzer = analyzerFactory.newAnalyzer();
 
         return new PackageWalker() {
 

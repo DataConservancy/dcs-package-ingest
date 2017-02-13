@@ -16,28 +16,17 @@
 
 package org.dataconservancy.packaging.ingest;
 
-import java.io.InputStream;
-import java.util.Collection;
-
 /**
- * Analyzes a DCS package.
+ * Creates analyzers for packages
  *
  * @author bbrosius@jhu.edu
  */
-public interface LdpPackageAnalyzer {
+public interface PackageAnalyzerFactory {
 
     /**
-     * Get root resources of the given package.
+     * Create a new analyzer.
      *
-     * @param pkg physical package.
-     * @return Collection of resources that are "roots" of the given pavkage (i.e. are not contained by any other
-     *         resource in the package.
+     * @return New analyzer.
      */
-    public Collection<PackagedResource> getContainerRoots(final InputStream pkg);
-
-    /**
-     * Clean up the package extraction directory.
-     */
-    void cleanUpExtractionDirectory();
-
+    PackageAnalyzer newAnalyzer();
 }

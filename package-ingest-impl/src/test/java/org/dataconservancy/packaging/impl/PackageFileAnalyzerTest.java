@@ -48,7 +48,7 @@ public class PackageFileAnalyzerTest {
 
     private static final URI EXPECTED_ORPHAN_BINARY_URI = URI.create("bag://test_pkg/data/bin/curl/NoParent.txt");
 
-    private PackageFileAnalyzer underTest;
+    private DcsPackageAnalyzer underTest;
 
     private final InputStream packageStream = mock(InputStream.class);
 
@@ -63,7 +63,7 @@ public class PackageFileAnalyzerTest {
         final OpenPackageService openPackageService = mock(OpenPackageService.class);
         when(openPackageService.openPackage(any(File.class), eq(packageStream))).thenReturn(testPackage);
 
-        underTest = new PackageFileAnalyzer(openPackageService, testPackage.getParentFile());
+        underTest = new DcsPackageAnalyzer(openPackageService, testPackage.getParentFile());
     }
 
     @Test

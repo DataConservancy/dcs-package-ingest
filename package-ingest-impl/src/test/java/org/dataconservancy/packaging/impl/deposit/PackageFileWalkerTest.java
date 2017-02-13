@@ -32,8 +32,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.dataconservancy.packaging.impl.PackageFileAnalyzer;
-import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
+import org.dataconservancy.packaging.impl.DcsPackageAnalyzer;
+import org.dataconservancy.packaging.impl.DcsPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.Depositor.DepositedResource;
@@ -76,10 +76,10 @@ public class PackageFileWalkerTest {
     DepositNotifier notifier;
 
     @Mock
-    PackageFileAnalyzerFactory analyzerFactory;
+    DcsPackageAnalyzerFactory analyzerFactory;
 
     @Mock
-    PackageFileAnalyzer analyzer;
+    DcsPackageAnalyzer analyzer;
 
     DefaultPackageWalkerFactory toTest = new DefaultPackageWalkerFactory();
 
