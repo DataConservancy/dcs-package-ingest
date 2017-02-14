@@ -21,64 +21,40 @@
   </parent>
   <artifactId>package-ingest-integration</artifactId>
 
-  <properties>
-    <fedora.version>4.5.0</fedora.version>
-    <fedora.port>8080</fedora.port>
-    <fedora.cxtPath>fcrepo</fedora.cxtPath>
-    <pax-exam.version>4.8.0</pax-exam.version>
-    <deposit.timeout.seconds>60</deposit.timeout.seconds>
-    <package.extract.dir>${project.build.directory}/package/extract</package.extract.dir>
-    <package.deposit.dir>${project.build.directory}/package/deposit</package.deposit.dir>
-    <package.fail.dir>${project.build.directory}/package/fail</package.fail.dir>
-    <fedora.baseuri>http://localhost:${fedora.port}/${fedora.cxtPath}/rest</fedora.baseuri>
-  </properties>
+  <profiles>
+    <profile>
+      <id>standard</id>
+      <properties>
+        <ingest.dynamic.test.port>8081</ingest.dynamic.test.port>
+        <fcrepo.dynamic.test.port>8080</fcrepo.dynamic.test.port>
+        <fcrepo.dynamic.jms.port>61616</fcrepo.dynamic.jms.port>
+        <fcrepo.dynamic.stomp.port>61613</fcrepo.dynamic.stomp.port>
+      </properties>
+    </profile>
+  </profiles>
 
   <!-- Build ====================================================== -->
 
   <build>
     <plugins>
+
       <plugin>
-        <groupId>org.codehaus.cargo</groupId>
-        <artifactId>cargo-maven2-plugin</artifactId>
-        <version>1.4.17</version>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
         <configuration>
-          <!-- Container configuration -->
-          <container>
-            <containerId>jetty9x</containerId>
-            <type>installed</type>
-            <systemProperties>
-              <fcrepo.home>${project.build.directory}/fcrepo</fcrepo.home>
-            </systemProperties>
-          </container>
-          <deployables>
-            <deployable>
-              <groupId>org.fcrepo</groupId>
-              <artifactId>fcrepo-webapp</artifactId>
-              <type>war</type>
-              <properties>
-                <context>${fedora.cxtPath}</context>
-              </properties>
-            </deployable>
-          </deployables>
-          <configuration>
-            <properties>
-              <cargo.servlet.port>${fedora.port}</cargo.servlet.port>
-            </properties>
-          </configuration>
+          <portNames>
+            <portName>ingest.dynamic.test.port</portName>
+            <portName>fcrepo.dynamic.test.port</portName>
+            <portName>fcrepo.dynamic.jms.port</portName>
+            <portName>fcrepo.dynamic.stomp.port</portName>
+          </portNames>
         </configuration>
         <executions>
           <execution>
-            <id>start-container</id>
-            <phase>pre-integration-test</phase>
+            <id>reserve-port</id>
+            <phase>validate</phase>
             <goals>
-              <goal>start</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>stop-container</id>
-            <phase>post-integration-test</phase>
-            <goals>
-              <goal>stop</goal>
+              <goal>reserve-network-port</goal>
             </goals>
           </execution>
         </executions>
@@ -98,14 +74,65 @@
         </executions>
         <configuration>
           <systemPropertyVariables>
-            <deposit.timeout.seconds>${deposit.timeout.seconds}</deposit.timeout.seconds>
-            <package.deposit.dir>${package.deposit.dir}</package.deposit.dir>
-            <package.fail.dir>${package.fail.dir}</package.fail.dir>
-            <package.extract.dir>${package.extract.dir}</package.extract.dir>
-            <pax.exam.karaf.version>${karaf.version}</pax.exam.karaf.version>
-            <fedora.baseuri>${fedora.baseuri}</fedora.baseuri>
+            <ingest.dynamic.test.port>${ingest.dynamic.test.port}</ingest.dynamic.test.port>
+            <fcrepo.dynamic.test.port>${fcrepo.dynamic.test.port}</fcrepo.dynamic.test.port>
+            <fcrepo.dynamic.jms.port>${fcrepo.dynamic.jms.port}</fcrepo.dynamic.jms.port>
+            <fcrepo.dynamic.stomp.port>${fcrepo.dynamic.stomp.port}</fcrepo.dynamic.stomp.port>
           </systemPropertyVariables>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.cargo</groupId>
+        <artifactId>cargo-maven2-plugin</artifactId>
+        <version>1.6.2</version>
+        <configuration>
+          <!-- Container configuration -->
+          <deployer />
+          <container>
+            <containerId>tomcat8x</containerId>
+            <type>installed</type>
+            <systemProperties>
+              <fcrepo.jms.baseUrl>http://localhost:${fcrepo.dynamic.test.port}/fcrepo/rest</fcrepo.jms.baseUrl>
+              <fcrepo.home>${project.build.directory}/fcrepo</fcrepo.home>
+              <fcrepo.modeshape.configuration>classpath:/config/file-simple/repository.json</fcrepo.modeshape.configuration>
+              <fcrepo.dynamic.jms.port>${fcrepo.dynamic.jms.port}</fcrepo.dynamic.jms.port>
+              <fcrepo.dynamic.stomp.port>${fcrepo.dynamic.stomp.port}</fcrepo.dynamic.stomp.port>
+            </systemProperties>
+          </container>
+          <deployables>
+            <deployable>
+              <groupId>org.fcrepo</groupId>
+              <artifactId>fcrepo-webapp</artifactId>
+              <type>war</type>
+              <properties>
+                <context>fcrepo</context>
+              </properties>
+            </deployable>
+          </deployables>
+          <configuration>
+            <properties>
+              <!-- <cargo.jvmargs>-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005</cargo.jvmargs> -->
+              <cargo.servlet.port>${fcrepo.dynamic.test.port}</cargo.servlet.port>
+            </properties>
+          </configuration>
+        </configuration>
+        <executions>
+          <execution>
+            <id>start-container</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>start</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>stop-container</id>
+            <phase>post-integration-test</phase>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Needed if you use versionAsInProject() -->
@@ -167,7 +194,7 @@
       <groupId>org.fcrepo</groupId>
       <artifactId>fcrepo-webapp</artifactId>
       <type>war</type>
-      <version>${fedora.version}</version>
+      <version>${fcrepo.version}</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
