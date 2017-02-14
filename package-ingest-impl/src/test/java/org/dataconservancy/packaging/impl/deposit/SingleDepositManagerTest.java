@@ -18,7 +18,6 @@ package org.dataconservancy.packaging.impl.deposit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -36,8 +35,8 @@ import java.util.Map;
 import org.dataconservancy.packaging.ingest.DepositFactory;
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
-import org.dataconservancy.packaging.ingest.EventType;
 import org.dataconservancy.packaging.ingest.EventListener;
+import org.dataconservancy.packaging.ingest.EventType;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackageWalkerFactory;
 import org.dataconservancy.packaging.ingest.PackagedResource;
@@ -102,15 +101,10 @@ public class SingleDepositManagerTest {
     public void rollBackTest() {
         doThrow(new RuntimeException()).when(walker).walk(any(Depositor.class), any(DepositNotifier.class));
 
-        try {
-            toTest.newDeposit().intoContainer(URI.create("test:nowhere"))
-                    .withPackage(stream)
-                    .withListener(listener)
-                    .perform();
-            fail("Should have thrown exception");
-        } catch (final Exception e) {
-            // expected
-        }
+        toTest.newDeposit().intoContainer(URI.create("test:nowhere"))
+                .withPackage(stream)
+                .withListener(listener)
+                .perform();
 
         verify(depositer).rollback();
         verify(depositer, times(0)).commit();

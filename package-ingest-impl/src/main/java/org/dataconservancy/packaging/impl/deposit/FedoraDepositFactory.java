@@ -165,7 +165,12 @@ public class FedoraDepositFactory implements DepositFactory {
             this.client = client;
 
             // This is a little hairy, but there's no real alternative!
-            txDepositInto = URI.create(canonicalDepositInto.toString().replace(baseUri, txBase.toString()));
+            if (canonicalDepositInto != null) {
+                txDepositInto = URI.create(canonicalDepositInto.toString().replace(baseUri, txBase.toString()));
+            } else {
+                LOG.warn("No deposit container specifying, using /");
+                txDepositInto = txBase;
+            }
         }
 
         @Override
@@ -198,7 +203,7 @@ public class FedoraDepositFactory implements DepositFactory {
         }
 
         private URI doDeposit(final PackagedResource resource, final URI parent) {
-            LOG.debug("Depositing into {} into {}", resource.getURI(), parent);
+            LOG.debug("Depositing {} into {}", resource.getURI(), parent);
             try (InputStream content = resource.getBody();
                     FcrepoResponse r = client.post(parent)
                             .slug(fileName(resource))

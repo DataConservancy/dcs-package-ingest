@@ -27,8 +27,8 @@ import java.util.Map;
 import org.dataconservancy.packaging.ingest.DepositBuilder;
 import org.dataconservancy.packaging.ingest.DepositFactory;
 import org.dataconservancy.packaging.ingest.Depositor;
-import org.dataconservancy.packaging.ingest.EventType;
 import org.dataconservancy.packaging.ingest.EventListener;
+import org.dataconservancy.packaging.ingest.EventType;
 import org.dataconservancy.packaging.ingest.PackageDepositManager;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackageWalkerFactory;
@@ -75,11 +75,17 @@ public class SingleDepositManager implements PackageDepositManager {
         final Map<URI, URI> localUriToDeposited = new HashMap<>();
         final List<URI> toUpdate = new ArrayList<>();
 
-        final Depositor depositor = depositFactory.newDepositor(resource, context);
-        final PackageWalker walker = walkerFactory.newWalker(pkg);
+        final Depositor depositor;
+        try {
+            depositor = depositFactory.newDepositor(resource, context);
+        } catch (final Exception e) {
+            listener.onEvent(EventType.ERROR, null, null, e);
+            return;
+        }
 
         // First, initially deposit all objects
         try {
+            final PackageWalker walker = walkerFactory.newWalker(pkg);
             walker.walk(depositor, (uri, ldpr) -> {
 
                 // Notify
@@ -110,7 +116,6 @@ public class SingleDepositManager implements PackageDepositManager {
             } finally {
                 listener.onEvent(EventType.ERROR, null, null, e);
             }
-            throw e;
         }
     }
 

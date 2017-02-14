@@ -152,6 +152,7 @@ public class IngestServlet extends HttpServlet {
             // If the first event we encounter is an error, just throw an http error
             if (EventType.ERROR.equals(event) && !response.isCommitted()) {
                 try {
+                    LOG.warn("Error thrown in deposit", (Throwable) detail);
                     response.sendError(SC_BAD_REQUEST, "event: error\ndata: " + detail + "\n");
                 } catch (final IOException e) {
                     throw new RuntimeException("Could not send error response", e);
@@ -204,7 +205,8 @@ public class IngestServlet extends HttpServlet {
             LOG.debug("Got container {} from parameter", req.getParameter("container"));
             return URI.create(req.getParameter("container"));
         } else {
-            return URI.create("http://localhost:8080/fcrepo/rest");
+            LOG.info("No container to deposit into specified");
+            return null;
         }
     }
 
