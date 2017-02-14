@@ -32,6 +32,8 @@ import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service for opening up a package file for ingest.
@@ -42,6 +44,8 @@ import org.apache.commons.io.IOUtils;
  * @author mpatton@jhu.edu
  */
 public class OpenPackageService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(OpenPackageService.class);
 
     /**
      * Extract contents of an archive.
@@ -62,8 +66,6 @@ public class OpenPackageService {
             buf = new BufferedInputStream(i);
             is = new CompressorStreamFactory().createCompressorInputStream(buf);
         } catch (final CompressorException e) {
-            buf.reset();
-            IOUtils.copy(buf, new FileOutputStream("target/input.tar.gz"));
             throw new IOException("Could not create compressed input stream", e);
         }
 
@@ -81,28 +83,19 @@ public class OpenPackageService {
         while ((entry = ais.getNextEntry()) != null) {
 
             final File file = extract(dest_dir, entry, ais);
+            LOG.info("Extracted {} to {}", entry.getName(), file.getAbsolutePath());
 
-            final String root = get_root_file_name(file);
+            final String root = (entry.getName().split("/"))[0];
 
             if (archive_base == null) {
                 archive_base = root;
             } else if (!archive_base.equals(root)) {
-                throw new IOException("Package has more than one base directory.");
+                throw new IOException("Package has more than one base directory.  Archive base:" + archive_base +
+                        ", root: " + root);
             }
         }
 
         return archive_base;
-    }
-
-    private String get_root_file_name(final File file) {
-        String root;
-        File f = file;
-
-        do {
-            root = file.getName();
-        } while ((f = f.getParentFile()) != null);
-
-        return root;
     }
 
     private String extract(final File dest_dir, final File file) throws ArchiveException, IOException {
