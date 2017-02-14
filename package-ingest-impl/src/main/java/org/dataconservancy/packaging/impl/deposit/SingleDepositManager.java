@@ -19,12 +19,16 @@ package org.dataconservancy.packaging.impl.deposit;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.dataconservancy.packaging.ingest.DepositBuilder;
 import org.dataconservancy.packaging.ingest.DepositFactory;
 import org.dataconservancy.packaging.ingest.Depositor;
+import org.dataconservancy.packaging.ingest.EventType;
+import org.dataconservancy.packaging.ingest.EventListener;
 import org.dataconservancy.packaging.ingest.PackageDepositManager;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackageWalkerFactory;
@@ -65,8 +69,8 @@ public class SingleDepositManager implements PackageDepositManager {
         this.depositFactory = df;
     }
 
-    @Override
-    public void depositPackageInto(final URI resource, final InputStream pkg, final Map<String, Object> context) {
+    private void depositPackageInto(final URI resource, final InputStream pkg, final EventListener listener,
+            final Map<String, Object> context) {
 
         final Map<URI, URI> localUriToDeposited = new HashMap<>();
         final List<URI> toUpdate = new ArrayList<>();
@@ -74,9 +78,14 @@ public class SingleDepositManager implements PackageDepositManager {
         final Depositor depositor = depositFactory.newDepositor(resource, context);
         final PackageWalker walker = walkerFactory.newWalker(pkg);
 
+        // First, initially deposit all objects
         try {
-            // First, initially deposit all objects
             walker.walk(depositor, (uri, ldpr) -> {
+
+                // Notify
+                listener.onEvent(EventType.DEPOSIT, uri, ldpr,
+                        String.format("Deposited <> as <>", ldpr.getURI(), uri));
+
                 localUriToDeposited.put(ldpr.getURI(), uri);
 
                 if (!Type.NONRDFSOURCE.equals(ldpr.getType())) {
@@ -85,15 +94,63 @@ public class SingleDepositManager implements PackageDepositManager {
             });
 
             // Next, re-map all URIs
-            toUpdate.forEach(uri -> depositor.remap(uri, localUriToDeposited));
+            toUpdate.forEach(uri -> {
+                depositor.remap(uri, localUriToDeposited);
+                listener.onEvent(EventType.REMAP, uri, null, "Remapped " + uri);
+            });
 
             // Finally, commit
             depositor.commit();
+            listener.onEvent(EventType.SUCCESS, null, null, "Ingest successfully completed");
         } catch (final Throwable e) {
 
             // Rollback if error!
-            depositor.rollback();
+            try {
+                depositor.rollback();
+            } finally {
+                listener.onEvent(EventType.ERROR, null, null, e);
+            }
             throw e;
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public DepositBuilder newDeposit() {
+        return new DepositBuilder() {
+
+            private InputStream pkgStream;
+
+            private URI container;
+
+            // Use a noop listener if no listeners are explicitly added;
+            private EventListener listener = (a, b, c, d) -> {
+            };
+
+            @Override
+            public DepositBuilder withPackage(final InputStream pkgStream) {
+                this.pkgStream = pkgStream;
+                return this;
+            }
+
+            @Override
+            public void perform() {
+                depositPackageInto(container, pkgStream, listener, Collections.emptyMap());
+            }
+
+            @Override
+            public DepositBuilder intoContainer(final URI container) {
+                this.container = container;
+                return this;
+            }
+
+            @Override
+            public DepositBuilder withListener(final EventListener listener) {
+                this.listener = listener;
+                return this;
+            }
+        };
     }
 }

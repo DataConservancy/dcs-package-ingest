@@ -27,6 +27,11 @@ import java.net.URI;
 import org.fcrepo.client.FcrepoClient;
 import org.fcrepo.client.FcrepoResponse;
 
+import org.dataconservancy.packaging.impl.DcsPackageAnalyzerFactory;
+import org.dataconservancy.packaging.impl.deposit.DefaultPackageWalkerFactory;
+import org.dataconservancy.packaging.impl.deposit.FedoraDepositFactory;
+import org.dataconservancy.packaging.impl.deposit.SingleDepositManager;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -34,7 +39,10 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * @author apb@jhu.edu
@@ -43,22 +51,39 @@ public class IngestServletIT {
 
     static Server server;
 
+    @ClassRule
+    public static TemporaryFolder testFolder = new TemporaryFolder();
+
     public static void main(final String[] args) throws Exception {
         setUp();
         server.join();
-
     }
 
     @BeforeClass
     public static void setUp() throws Exception {
         server = new Server(8080);
 
+        final FedoraDepositFactory fedora = new FedoraDepositFactory();
+        final DcsPackageAnalyzerFactory dcs = new DcsPackageAnalyzerFactory();
+        dcs.setExtractDir(testFolder.newFolder().toString());
+
+        final DefaultPackageWalkerFactory ldpc = new DefaultPackageWalkerFactory();
+        ldpc.setAnalyzerFactory(dcs);
+
+        final SingleDepositManager mgr = new SingleDepositManager();
+        mgr.setDepositFactory(fedora);
+        mgr.setWalkerFactory(ldpc);
+
+        final IngestServlet ingest = new IngestServlet(mgr);
+
         final ServletContextHandler servletContext = new ServletContextHandler();
         servletContext.setContextPath("/");
         servletContext.setBaseResource(Resource.newClassPathResource("/index.html"));
 
-        final ServletHolder servlet = servletContext.addServlet(IngestServlet.class, "/ingest");
-        servlet.setAsyncSupported(true);
+        final ServletHolder ingestServlet = new ServletHolder(ingest);
+        ingestServlet.setAsyncSupported(true);
+
+        servletContext.addServlet(new ServletHolder(ingest), "/ingest");
 
         servletContext.addServlet(DefaultServlet.class, "/");
 
@@ -72,8 +97,9 @@ public class IngestServletIT {
     }
 
     @Test
+    @Ignore
     public void smokeTest() throws Exception {
-        try (FcrepoResponse response = FcrepoClient.client().throwExceptionOnFailure().build().post(URI.create(
+        try (FcrepoResponse response = FcrepoClient.client().throwExceptionOnFailure().build().get(URI.create(
                 "http://localhost:8080/ingest"))
                 .perform()) {
             final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getBody(),

@@ -31,12 +31,13 @@ import static org.mockito.Mockito.when;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 import org.dataconservancy.packaging.ingest.DepositFactory;
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
+import org.dataconservancy.packaging.ingest.EventType;
+import org.dataconservancy.packaging.ingest.EventListener;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackageWalkerFactory;
 import org.dataconservancy.packaging.ingest.PackagedResource;
@@ -53,6 +54,9 @@ import org.mockito.Mock;
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class SingleDepositManagerTest {
+
+    @Mock
+    EventListener listener;
 
     @Mock
     InputStream stream;
@@ -84,10 +88,14 @@ public class SingleDepositManagerTest {
 
     @Test
     public void commitTest() {
-        toTest.depositPackageInto(URI.create("test:nowhere"), stream, Collections.emptyMap());
+        toTest.newDeposit().intoContainer(URI.create("test:nowhere"))
+                .withPackage(stream)
+                .withListener(listener)
+                .perform();
 
         verify(depositer).commit();
         verify(depositer, times(0)).rollback();
+        verify(listener).onEvent(eq(EventType.SUCCESS), any(), any(), any());
     }
 
     @Test
@@ -95,7 +103,10 @@ public class SingleDepositManagerTest {
         doThrow(new RuntimeException()).when(walker).walk(any(Depositor.class), any(DepositNotifier.class));
 
         try {
-            toTest.depositPackageInto(URI.create("test:nowhere"), stream, Collections.emptyMap());
+            toTest.newDeposit().intoContainer(URI.create("test:nowhere"))
+                    .withPackage(stream)
+                    .withListener(listener)
+                    .perform();
             fail("Should have thrown exception");
         } catch (final Exception e) {
             // expected
@@ -103,10 +114,11 @@ public class SingleDepositManagerTest {
 
         verify(depositer).rollback();
         verify(depositer, times(0)).commit();
+        verify(listener).onEvent(eq(EventType.ERROR), any(), any(), any());
     }
 
     @Test
-    public void remapTest() {
+    public void successfulDepositTest() {
 
         final PackagedResource binaryDescription = mock(PackagedResource.class);
         final PackagedResource binary = mock(PackagedResource.class);
@@ -155,7 +167,10 @@ public class SingleDepositManagerTest {
             return null;
         }).when(depositer).remap(any(URI.class), any(Map.class));
 
-        toTest.depositPackageInto(URI.create("test:nowhere"), stream, Collections.emptyMap());
+        toTest.newDeposit().intoContainer(URI.create("test:nowhere"))
+                .withPackage(stream)
+                .withListener(listener)
+                .perform();
 
         // The container and binary description should be remapped
         verify(depositer).remap(eq(depositedContainerUri), any(Map.class));
@@ -163,5 +178,13 @@ public class SingleDepositManagerTest {
 
         // The binary shouldn't be remapped!
         verify(depositer, times(0)).remap(eq(depositedBinaryUri), any(Map.class));
+
+        // Three deposit events should be fired
+        verify(listener, times(3)).onEvent(eq(EventType.DEPOSIT), any(), any(), any());
+
+        // Two remap events should be fired
+        verify(listener, times(2)).onEvent(eq(EventType.REMAP), any(), any(), any());
+        verify(listener).onEvent(eq(EventType.REMAP), eq(depositedContainerUri), any(), any());
+        verify(listener).onEvent(eq(EventType.REMAP), eq(depositedBinaryDescriptionUri), any(), any());
     }
 }

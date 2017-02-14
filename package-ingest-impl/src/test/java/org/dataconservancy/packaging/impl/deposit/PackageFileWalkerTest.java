@@ -85,7 +85,6 @@ public class PackageFileWalkerTest {
 
     @Before
     public void setUp() {
-        ;
         when(binary.getDescription()).thenReturn(binaryDescription);
 
         when(root1.getChildren()).thenReturn(Arrays.asList(child1));

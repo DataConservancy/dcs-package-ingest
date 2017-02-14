@@ -42,7 +42,7 @@
       <artifactId>commons-compress</artifactId>
       <version>1.13</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -75,6 +75,13 @@
       <artifactId>logback-classic</artifactId>
       <version>1.1.9</version>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.dataconservancy.packaging</groupId>
+      <artifactId>package-ingest-impl</artifactId>
+      <scope>test</scope>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>

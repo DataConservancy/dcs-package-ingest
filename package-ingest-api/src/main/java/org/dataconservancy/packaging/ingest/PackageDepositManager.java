@@ -16,10 +16,6 @@
 
 package org.dataconservancy.packaging.ingest;
 
-import java.io.InputStream;
-import java.net.URI;
-import java.util.Map;
-
 /**
  * Manages the deposit of the contents of a package into a container in the repository.
  *
@@ -28,11 +24,9 @@ import java.util.Map;
 public interface PackageDepositManager {
 
     /**
-     * deposit a package into a repository container.
+     * Create new deposit builder.
      *
-     * @param resource repository container URI.
-     * @param pkg Package stream
-     * @param context Opaque, implementation-specific context. May be null , or empty
+     * @return empty/default deposit builder.
      */
-    public void depositPackageInto(URI resource, InputStream pkg, Map<String, Object> context);
+    public DepositBuilder newDeposit();
 }
