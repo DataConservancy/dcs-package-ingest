@@ -21,8 +21,11 @@ package org.dataconservancy.packaging.ingest.http;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.file.Files;
 
 import org.fcrepo.client.FcrepoClient;
 import org.fcrepo.client.FcrepoResponse;
@@ -40,7 +43,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
@@ -50,6 +52,13 @@ import org.junit.rules.TemporaryFolder;
 public class IngestServletIT {
 
     static Server server;
+
+    static String fcrepoPort = System.getProperty("fcrepo.dynamic.test.port", "8080");
+
+    static int ingestPort = Integer.parseInt(System.getProperty("ingest.dynamic.test.port", "8081"));
+
+    static final URI ingestUri = URI.create("http://localhost:" +
+            ingestPort + "/ingest");
 
     @ClassRule
     public static TemporaryFolder testFolder = new TemporaryFolder();
@@ -61,11 +70,13 @@ public class IngestServletIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        server = new Server(8080);
+        server = new Server(ingestPort);
 
         final FedoraDepositFactory fedora = new FedoraDepositFactory();
+        fedora.setBaseUri("http://localhost:" + fcrepoPort + "/fcrepo/rest");
+
         final DcsPackageAnalyzerFactory dcs = new DcsPackageAnalyzerFactory();
-        dcs.setExtractDir(testFolder.newFolder().toString());
+        dcs.setExtractDir(tempDir().toString());
 
         final DefaultPackageWalkerFactory ldpc = new DefaultPackageWalkerFactory();
         ldpc.setAnalyzerFactory(dcs);
@@ -97,10 +108,10 @@ public class IngestServletIT {
     }
 
     @Test
-    @Ignore
     public void smokeTest() throws Exception {
-        try (FcrepoResponse response = FcrepoClient.client().throwExceptionOnFailure().build().get(URI.create(
-                "http://localhost:8080/ingest"))
+        final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
+        try (FcrepoResponse response = client.post(ingestUri)
+                .body(this.getClass().getResourceAsStream("/test_pkg.tar.gz"), "application/x-tar")
                 .perform()) {
             final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getBody(),
                     UTF_8));
@@ -110,6 +121,14 @@ public class IngestServletIT {
             }
             response.getBody().close();
             bufferedReader.close();
+        }
+    }
+
+    public static File tempDir() throws IOException {
+        try {
+            return testFolder.newFolder();
+        } catch (final IllegalStateException e) {
+            return Files.createTempDirectory("staging").toFile();
         }
     }
 }

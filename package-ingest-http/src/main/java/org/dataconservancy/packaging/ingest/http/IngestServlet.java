@@ -117,7 +117,18 @@ public class IngestServlet extends HttpServlet {
                 .withPackage(cxt.getRequest().getInputStream())
                 .intoContainer(uriFromRequest(req));
 
-        exe.execute(() -> execDeposit(deposit, cxt));
+        exe.execute(() -> {
+            try {
+                execDeposit(deposit, cxt);
+            } catch (final Throwable e) {
+                LOG.info("Terminated response with exception", e);
+                try {
+                    cxt.complete();
+                } catch (final Throwable x) {
+                    LOG.warn("Error handler could not complete", e);
+                }
+            }
+        });
 
     }
 
@@ -140,9 +151,11 @@ public class IngestServlet extends HttpServlet {
 
             // If the first event we encounter is an error, just throw an http error
             if (EventType.ERROR.equals(event) && !response.isCommitted()) {
-                response.setStatus(SC_BAD_REQUEST);
-                out.println("event: error");
-                out.println("data: " + event + "\n");
+                try {
+                    response.sendError(SC_BAD_REQUEST, "event: error\ndata: " + detail + "\n");
+                } catch (final IOException e) {
+                    throw new RuntimeException("Could not send error response", e);
+                }
                 return;
             }
 
@@ -166,7 +179,7 @@ public class IngestServlet extends HttpServlet {
                 out.flush();
                 flushResponse(response);
             }
-        });
+        }).perform();
 
         cxt.complete();
     }

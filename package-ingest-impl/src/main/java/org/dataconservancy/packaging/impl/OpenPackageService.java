@@ -56,10 +56,14 @@ public class OpenPackageService {
         // Apache commons compress requires buffered input streams
 
         InputStream is;
+        BufferedInputStream buf = null;
 
         try {
-            is = new CompressorStreamFactory().createCompressorInputStream(new BufferedInputStream(i));
+            buf = new BufferedInputStream(i);
+            is = new CompressorStreamFactory().createCompressorInputStream(buf);
         } catch (final CompressorException e) {
+            buf.reset();
+            IOUtils.copy(buf, new FileOutputStream("target/input.tar.gz"));
             throw new IOException("Could not create compressed input stream", e);
         }
 

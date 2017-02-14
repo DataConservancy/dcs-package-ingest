@@ -31,6 +31,8 @@ import org.dataconservancy.packaging.ingest.PackagedResource;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author apb@jhu.edu
@@ -39,6 +41,8 @@ import org.osgi.service.component.annotations.Reference;
 public class DefaultPackageWalkerFactory implements PackageWalkerFactory {
 
     PackageAnalyzerFactory analyzerFactory;
+
+    Logger LOG = LoggerFactory.getLogger(DefaultPackageWalkerFactory.class);
 
     /**
      * Set the analyzer factory.
@@ -65,6 +69,7 @@ public class DefaultPackageWalkerFactory implements PackageWalkerFactory {
                 }
             }
         };
+
     }
 
     private static void doWalk(final Depositor depositer, final DepositNotifier notify,
