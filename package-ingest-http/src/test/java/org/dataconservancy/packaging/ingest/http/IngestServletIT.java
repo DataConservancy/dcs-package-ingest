@@ -45,11 +45,15 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author apb@jhu.edu
  */
 public class IngestServletIT {
+
+    static final Logger LOG = LoggerFactory.getLogger(IngestServletIT.class);
 
     static Server server;
 
@@ -110,8 +114,9 @@ public class IngestServletIT {
     @Test
     public void smokeTest() throws Exception {
         final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
+
         try (FcrepoResponse response = client.post(ingestUri)
-                .body(this.getClass().getResourceAsStream("/test_pkg.tar.gz"), "application/x-tar")
+                .body(this.getClass().getResourceAsStream("/packages/test-package.zip"), "application/zip")
                 .perform()) {
             final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getBody(),
                     UTF_8));

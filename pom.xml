@@ -39,6 +39,7 @@
     <module>package-ingest-karaf</module>
     <module>package-ingest-http</module>
     <module>package-ingest-jar</module>
+    <module>package-ingest-test</module>
   </modules>
 
   <!-- Properties ================================================ -->
