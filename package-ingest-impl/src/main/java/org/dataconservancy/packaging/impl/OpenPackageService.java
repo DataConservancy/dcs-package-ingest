@@ -57,29 +57,11 @@ public class OpenPackageService {
      * @throws IOException if there is more than one package root
      */
     private String extract(final File dest_dir, final InputStream i) throws ArchiveException, IOException {
-        // Apache commons compress requires buffered input streams
 
-        InputStream is;
-        BufferedInputStream buf = null;
-
-        try {
-            buf = new BufferedInputStream(i);
-            is = new CompressorStreamFactory().createCompressorInputStream(buf);
-        } catch (final CompressorException e) {
-            throw new IOException("Could not create compressed input stream", e);
-        }
-
-        // Extract entries from archive
-
-        if (!is.markSupported()) {
-            is = new BufferedInputStream(is);
-        }
-
-        String archive_base = null;
-
-        final ArchiveInputStream ais = new ArchiveStreamFactory().createArchiveInputStream(is);
+        final ArchiveInputStream ais = archiveStream(i);
         ArchiveEntry entry;
 
+        String archive_base = null;
         while ((entry = ais.getNextEntry()) != null) {
 
             final File file = extract(dest_dir, entry, ais);
@@ -160,6 +142,30 @@ public class OpenPackageService {
             return new File(staging_dir, extract(staging_dir, stream));
         } catch (final ArchiveException e) {
             throw new IOException(e);
+        }
+    }
+
+    private static InputStream buffered(final InputStream in) {
+        if (!in.markSupported()) {
+            return new BufferedInputStream(in);
+        }
+        return in;
+    }
+
+    private static InputStream decompress(final InputStream in) {
+        try {
+            return new CompressorStreamFactory().createCompressorInputStream(buffered(in));
+        } catch (final CompressorException e) {
+            return in;
+        }
+    }
+
+    private static ArchiveInputStream archiveStream(final InputStream in) throws ArchiveException {
+        final ArchiveStreamFactory af = new ArchiveStreamFactory();
+        try {
+            return af.createArchiveInputStream(buffered(in));
+        } catch (final ArchiveException e) {
+            return af.createArchiveInputStream(decompress(buffered(in)));
         }
     }
 }
