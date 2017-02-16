@@ -392,7 +392,6 @@ public class FedoraDepositFactory implements DepositFactory {
         } catch (final IOException e) {
             throw new RuntimeException("Error creating spaeql patch", e);
         }
-
     }
 
     private static String fileName(final PackagedResource resource) {

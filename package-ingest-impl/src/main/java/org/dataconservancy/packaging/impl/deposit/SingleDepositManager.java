@@ -90,7 +90,7 @@ public class SingleDepositManager implements PackageDepositManager {
 
                 // Notify
                 listener.onEvent(EventType.DEPOSIT, uri, ldpr,
-                        String.format("Deposited <> as <>", ldpr.getURI(), uri));
+                        String.format("Deposited <%s> as <%s>", ldpr.getURI(), uri));
 
                 localUriToDeposited.put(ldpr.getURI(), uri);
 
