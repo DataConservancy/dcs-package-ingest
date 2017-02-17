@@ -20,8 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
+import org.dataconservancy.packaging.ingest.PackageAnalyzer;
+import org.dataconservancy.packaging.ingest.PackageAnalyzerFactory;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -47,8 +47,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @Designate(ocd = PackageFileAnalyzerFactoryConfig.class)
 @Component(configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true)
-public class PackageFileAnalyzerFactory
-        implements LdpPackageAnalyzerFactory<File> {
+public class DcsPackageAnalyzerFactory
+        implements PackageAnalyzerFactory {
 
     private File extractBaseDir;
 
@@ -74,7 +74,7 @@ public class PackageFileAnalyzerFactory
     }
 
     @Override
-    public LdpPackageAnalyzer<File> newAnalyzer() {
+    public PackageAnalyzer newAnalyzer() {
 
         // Reasonablbe default in case it's not set
         if (extractBaseDir == null) {
@@ -86,7 +86,7 @@ public class PackageFileAnalyzerFactory
                 }
             }
         }
-        return new PackageFileAnalyzer(new OpenPackageService(),
+        return new DcsPackageAnalyzer(new OpenPackageService(),
                 extractBaseDir);
     }
 

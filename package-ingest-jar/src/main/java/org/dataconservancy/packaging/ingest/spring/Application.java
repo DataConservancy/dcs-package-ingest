@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Johns Hopkins University
+ * Copyright 2017 Johns Hopkins University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,26 @@
  * limitations under the License.
  */
 
-package org.dataconservancy.packaging.ingest;
+package org.dataconservancy.packaging.ingest.spring;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.web.servlet.ServletComponentScan;
 
 /**
- * Creates analyzers for packages
- *
- * @param T Physical form of package (e.g. File, InputStream, etc)
- * @author bbrosius@jhu.edu
+ * @author apb@jhu.edu
  */
-public interface LdpPackageAnalyzerFactory<T> {
+@SpringBootApplication
+@ServletComponentScan
+public abstract class Application {
 
     /**
-     * Create a new analyzer.
+     * Run the spring boot app,
      *
-     * @return New analyzer.
+     * @param args commandline args.
      */
-    LdpPackageAnalyzer<T> newAnalyzer();
+    public static void main(final String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
 }

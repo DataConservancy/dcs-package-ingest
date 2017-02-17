@@ -17,16 +17,28 @@
 package org.dataconservancy.packaging.ingest;
 
 /**
- * Manages the deposit of the contents of a package into a container in the repository.
+ * Deposit workflow related events.
  *
  * @author apb@jhu.edu
  */
-public interface PackageDepositManager {
+public enum EventType {
+    /** A package entry has been deposited */
+    DEPOSIT,
 
-    /**
-     * Create new deposit builder.
-     *
-     * @return empty/default deposit builder.
-     */
-    public DepositBuilder newDeposit();
+    /** URIs have been remapped in a resource. */
+    REMAP,
+
+    /** noop heartbeat */
+    HEARTBEAT,
+
+    /** An error has occurred */
+    ERROR,
+
+    /** Successful completion */
+    SUCCESS;
+
+    @Override
+    public String toString() {
+        return name().toLowerCase();
+    }
 }

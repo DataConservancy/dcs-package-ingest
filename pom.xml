@@ -37,6 +37,9 @@
     <module>package-ingest-impl</module>
     <module>package-ingest-api</module>
     <module>package-ingest-karaf</module>
+    <module>package-ingest-http</module>
+    <module>package-ingest-jar</module>
+    <module>package-ingest-test</module>
   </modules>
 
   <!-- Properties ================================================ -->
@@ -53,6 +56,8 @@
     <jena.version>3.1.1</jena.version>
     <logback.version>1.1.9</logback.version>
     <mockito.version>2.7.1</mockito.version>
+    <pax-exam.version>4.9.2</pax-exam.version>
+    <slf4j.version>1.7.22</slf4j.version>
   </properties>
 
   <!-- Build ====================================================== -->

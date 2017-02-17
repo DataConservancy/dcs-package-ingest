@@ -14,19 +14,46 @@
  * limitations under the License.
  */
 
-package org.dataconservancy.packaging.ingest;
+package org.dataconservancy.packaging.ingest.http;
 
 /**
- * Manages the deposit of the contents of a package into a container in the repository.
+ * ServerSentEvent event.
  *
  * @author apb@jhu.edu
  */
-public interface PackageDepositManager {
+public class Event {
+
+    int id = 0;
+
+    String event = "message";
+
+    String data = "";
 
     /**
-     * Create new deposit builder.
+     * Event ID.
      *
-     * @return empty/default deposit builder.
+     * @return id;
      */
-    public DepositBuilder newDeposit();
+    public int id() {
+        return id;
+    }
+
+    /**
+     * Event name.
+     *
+     * @return Event name.
+     */
+    public String event() {
+        return event;
+    }
+
+    /**
+     * Event data.
+     *
+     * @return data, or empty string if none.
+     */
+    public String data() {
+        return data;
+    }
+
 }

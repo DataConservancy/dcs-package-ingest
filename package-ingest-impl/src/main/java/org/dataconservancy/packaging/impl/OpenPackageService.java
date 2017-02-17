@@ -32,6 +32,8 @@ import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Service for opening up a package file for ingest.
@@ -43,6 +45,8 @@ import org.apache.commons.io.IOUtils;
  */
 public class OpenPackageService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(OpenPackageService.class);
+
     /**
      * Extract contents of an archive.
      *
@@ -53,52 +57,27 @@ public class OpenPackageService {
      * @throws IOException if there is more than one package root
      */
     private String extract(final File dest_dir, final InputStream i) throws ArchiveException, IOException {
-        // Apache commons compress requires buffered input streams
 
-        InputStream is;
-
-        try {
-            is = new CompressorStreamFactory().createCompressorInputStream(new BufferedInputStream(i));
-        } catch (final CompressorException e) {
-            throw new IOException("Could not create compressed input stream", e);
-        }
-
-        // Extract entries from archive
-
-        if (!is.markSupported()) {
-            is = new BufferedInputStream(is);
-        }
-
-        String archive_base = null;
-
-        final ArchiveInputStream ais = new ArchiveStreamFactory().createArchiveInputStream(is);
+        final ArchiveInputStream ais = archiveStream(i);
         ArchiveEntry entry;
 
+        String archive_base = null;
         while ((entry = ais.getNextEntry()) != null) {
 
             final File file = extract(dest_dir, entry, ais);
+            LOG.info("Extracted {} to {}", entry.getName(), file.getAbsolutePath());
 
-            final String root = get_root_file_name(file);
+            final String root = (entry.getName().split("/"))[0];
 
             if (archive_base == null) {
                 archive_base = root;
             } else if (!archive_base.equals(root)) {
-                throw new IOException("Package has more than one base directory.");
+                throw new IOException("Package has more than one base directory.  Archive base:" + archive_base +
+                        ", root: " + root);
             }
         }
 
         return archive_base;
-    }
-
-    private String get_root_file_name(final File file) {
-        String root;
-        File f = file;
-
-        do {
-            root = file.getName();
-        } while ((f = f.getParentFile()) != null);
-
-        return root;
     }
 
     private String extract(final File dest_dir, final File file) throws ArchiveException, IOException {
@@ -147,6 +126,52 @@ public class OpenPackageService {
 
         } catch (final ArchiveException e) {
             throw new IOException(e);
+        }
+    }
+
+    /**
+     * Open a package
+     *
+     * @param staging_dir Staging directory.
+     * @param stream package stream.
+     * @return File for the extracted package location.
+     * @throws IOException if there is a problem expanding files into the directory.
+     */
+    public File openPackage(final File staging_dir, final InputStream stream) throws IOException {
+        try {
+            return new File(staging_dir, extract(staging_dir, stream));
+        } catch (final ArchiveException e) {
+            throw new IOException(e);
+        }
+    }
+
+    private static InputStream buffered(final InputStream in) {
+        if (!in.markSupported()) {
+            return new BufferedInputStream(in);
+        }
+        return in;
+    }
+
+    private static InputStream decompress(final InputStream in) {
+        try {
+            return new CompressorStreamFactory().createCompressorInputStream(buffered(in));
+        } catch (final CompressorException e) {
+            return in;
+        }
+    }
+
+    private static ArchiveInputStream archiveStream(final InputStream in) throws ArchiveException {
+        final ArchiveStreamFactory af = new ArchiveStreamFactory();
+        final InputStream buffered = buffered(in);
+        try {
+            return af.createArchiveInputStream(buffered);
+        } catch (final ArchiveException e) {
+            try {
+                buffered.reset();
+                return af.createArchiveInputStream(buffered(decompress(buffered)));
+            } catch (final IOException x) {
+                throw new RuntimeException(x);
+            }
         }
     }
 }

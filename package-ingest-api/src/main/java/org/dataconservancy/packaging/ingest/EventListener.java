@@ -16,17 +16,22 @@
 
 package org.dataconservancy.packaging.ingest;
 
+import java.net.URI;
+
 /**
- * Manages the deposit of the contents of a package into a container in the repository.
+ * Notification for events during a deposit.
  *
  * @author apb@jhu.edu
  */
-public interface PackageDepositManager {
+public interface EventListener {
 
     /**
-     * Create new deposit builder.
+     * Respond to an event.
      *
-     * @return empty/default deposit builder.
+     * @param type Type of event
+     * @param repositoryResource Repository resource relevant to the event, null otherwise.
+     * @param resource The packaged resource. May be null.
+     * @param detail Event-specific additional informaiton. May be null.
      */
-    public DepositBuilder newDeposit();
+    public void onEvent(EventType type, URI repositoryResource, PackagedResource resource, Object detail);
 }

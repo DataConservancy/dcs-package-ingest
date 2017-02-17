@@ -16,29 +16,33 @@
 
 package org.dataconservancy.packaging.impl.deposit;
 
-import java.io.File;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Collection;
 
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.Depositor.DepositedResource;
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzerFactory;
+import org.dataconservancy.packaging.ingest.PackageAnalyzer;
+import org.dataconservancy.packaging.ingest.PackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.PackageWalker;
 import org.dataconservancy.packaging.ingest.PackageWalkerFactory;
 import org.dataconservancy.packaging.ingest.PackagedResource;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author apb@jhu.edu
  */
 @Component(immediate = true)
-public class PackageFileWalker implements PackageWalkerFactory<File> {
+public class DefaultPackageWalkerFactory implements PackageWalkerFactory {
 
-    LdpPackageAnalyzerFactory<File> analyzerFactory;
+    PackageAnalyzerFactory analyzerFactory;
+
+    Logger LOG = LoggerFactory.getLogger(DefaultPackageWalkerFactory.class);
 
     /**
      * Set the analyzer factory.
@@ -46,25 +50,30 @@ public class PackageFileWalker implements PackageWalkerFactory<File> {
      * @param analyzerFactory the package analyzer factory.
      */
     @Reference
-    public void setAnalyzerFactory(final LdpPackageAnalyzerFactory<File> analyzerFactory) {
+    public void setAnalyzerFactory(final PackageAnalyzerFactory analyzerFactory) {
         this.analyzerFactory = analyzerFactory;
     }
 
     @Override
-    public PackageWalker newWalker(final File pkgfile) {
-        final LdpPackageAnalyzer<File> analyzer = analyzerFactory.newAnalyzer();
+    public PackageWalker newWalker(final InputStream pkg) {
+        final PackageAnalyzer analyzer = analyzerFactory.newAnalyzer();
 
         return new PackageWalker() {
 
             @Override
             public void walk(final Depositor depositor, final DepositNotifier notifier) {
                 try {
-                    doWalk(depositor, notifier, analyzer.getContainerRoots(pkgfile), null);
+                    doWalk(depositor, notifier, analyzer.getContainerRoots(pkg), null);
                 } finally {
-                    analyzer.cleanUpExtractionDirectory();
+                    try {
+                        analyzer.cleanUpExtractionDirectory();
+                    } catch (final Exception e) {
+                        LOG.warn("Could not clean up extraction directory", e);
+                    }
                 }
             }
         };
+
     }
 
     private static void doWalk(final Depositor depositer, final DepositNotifier notify,

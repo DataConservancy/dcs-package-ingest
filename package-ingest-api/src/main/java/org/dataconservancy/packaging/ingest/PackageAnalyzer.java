@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Johns Hopkins University
+ * Copyright 2016 Johns Hopkins University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,28 @@
 
 package org.dataconservancy.packaging.ingest;
 
+import java.io.InputStream;
+import java.util.Collection;
+
 /**
- * Manages the deposit of the contents of a package into a container in the repository.
+ * Analyzes a DCS package.
  *
- * @author apb@jhu.edu
+ * @author bbrosius@jhu.edu
  */
-public interface PackageDepositManager {
+public interface PackageAnalyzer {
 
     /**
-     * Create new deposit builder.
+     * Get root resources of the given package.
      *
-     * @return empty/default deposit builder.
+     * @param pkg physical package.
+     * @return Collection of resources that are "roots" of the given pavkage (i.e. are not contained by any other
+     *         resource in the package.
      */
-    public DepositBuilder newDeposit();
+    public Collection<PackagedResource> getContainerRoots(final InputStream pkg);
+
+    /**
+     * Clean up the package extraction directory.
+     */
+    void cleanUpExtractionDirectory();
+
 }

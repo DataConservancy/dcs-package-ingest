@@ -1,11 +1,3 @@
-<!-- ~ Copyright 2016 Johns Hopkins University ~ ~ Licensed under the Apache 
-  License, Version 2.0 (the "License"); ~ you may not use this file except 
-  in compliance with the License. ~ You may obtain a copy of the License at 
-  ~ ~ http://www.apache.org/licenses/LICENSE-2.0 ~ ~ Unless required by applicable 
-  law or agreed to in writing, software ~ distributed under the License is 
-  distributed on an "AS IS" BASIS, ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY 
-  KIND, either express or implied. ~ See the License for the specific language 
-  governing permissions and ~ limitations under the License. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
@@ -14,13 +6,13 @@
     <artifactId>package-ingest</artifactId>
     <version>0.1.3-SNAPSHOT</version>
   </parent>
-  <artifactId>package-ingest-impl</artifactId>
-  <packaging>bundle</packaging>
+  <artifactId>package-ingest-http</artifactId>
 
   <profiles>
     <profile>
       <id>standard</id>
       <properties>
+        <ingest.dynamic.test.port>8081</ingest.dynamic.test.port>
         <fcrepo.dynamic.test.port>8080</fcrepo.dynamic.test.port>
         <fcrepo.dynamic.jms.port>61616</fcrepo.dynamic.jms.port>
         <fcrepo.dynamic.stomp.port>61613</fcrepo.dynamic.stomp.port>
@@ -48,6 +40,7 @@
         <artifactId>build-helper-maven-plugin</artifactId>
         <configuration>
           <portNames>
+            <portName>ingest.dynamic.test.port</portName>
             <portName>fcrepo.dynamic.test.port</portName>
             <portName>fcrepo.dynamic.jms.port</portName>
             <portName>fcrepo.dynamic.stomp.port</portName>
@@ -77,6 +70,7 @@
         </executions>
         <configuration>
           <systemPropertyVariables>
+            <ingest.dynamic.test.port>${ingest.dynamic.test.port}</ingest.dynamic.test.port>
             <fcrepo.dynamic.test.port>${fcrepo.dynamic.test.port}</fcrepo.dynamic.test.port>
             <fcrepo.dynamic.jms.port>${fcrepo.dynamic.jms.port}</fcrepo.dynamic.jms.port>
             <fcrepo.dynamic.stomp.port>${fcrepo.dynamic.stomp.port}</fcrepo.dynamic.stomp.port>
@@ -139,21 +133,8 @@
     </plugins>
   </build>
 
+
   <dependencies>
-
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.service.metatype.annotations</artifactId>
-      <version>1.3.0</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.service.component.annotations</artifactId>
-      <version>1.3.0</version>
-      <scope>provided</scope>
-    </dependency>
 
     <dependency>
       <groupId>org.dataconservancy.packaging</groupId>
@@ -162,49 +143,56 @@
     </dependency>
 
     <dependency>
+      <groupId>org.ops4j.pax.cdi</groupId>
+      <artifactId>pax-cdi-api</artifactId>
+      <version>0.12.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <version>1</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-compress</artifactId>
-      <version>${commons-compress.version}</version>
-      <scope>compile</scope>
+      <version>1.13</version>
     </dependency>
 
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>${commons-io.version}</version>
-      <scope>compile</scope>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.jena</groupId>
-      <artifactId>jena-arq</artifactId>
-      <version>${jena.version}</version>
-    </dependency>
-
-    <!-- for OSGi -->
-    <dependency>
-      <groupId>org.apache.servicemix.bundles</groupId>
-      <artifactId>org.apache.servicemix.bundles.xmlresolver</artifactId>
-      <version>1.2_5</version>
-    </dependency>
-
-    <!-- for OSGi -->
-    <dependency>
-      <groupId>org.apache.servicemix.bundles</groupId>
-      <artifactId>org.apache.servicemix.bundles.xerces</artifactId>
-      <version>2.11.0_1</version>
-      <exclusions>
-        <exclusion>
-          <groupId>xml-apis</groupId>
-          <artifactId>xml-apis</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.dataconservancy.packaging</groupId>
+      <artifactId>package-ingest-test</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>xml-apis</groupId>
-      <artifactId>xml-apis</artifactId>
-      <version>1.4.01</version>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
+      <version>9.4.0.v20161208</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>9.4.0.v20161208</version>
       <scope>test</scope>
     </dependency>
 
@@ -212,19 +200,6 @@
       <groupId>org.fcrepo.client</groupId>
       <artifactId>fcrepo-java-client</artifactId>
       <version>0.2.1</version>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -232,6 +207,20 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>1.1.9</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.dataconservancy.packaging</groupId>
+      <artifactId>package-ingest-impl</artifactId>
+      <scope>test</scope>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -249,6 +238,12 @@
       </exclusions>
     </dependency>
 
-  </dependencies>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
 
+  </dependencies>
 </project>

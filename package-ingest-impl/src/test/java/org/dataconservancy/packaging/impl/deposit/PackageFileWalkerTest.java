@@ -25,15 +25,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.dataconservancy.packaging.impl.PackageFileAnalyzer;
-import org.dataconservancy.packaging.impl.PackageFileAnalyzerFactory;
+import org.dataconservancy.packaging.impl.DcsPackageAnalyzer;
+import org.dataconservancy.packaging.impl.DcsPackageAnalyzerFactory;
 import org.dataconservancy.packaging.ingest.DepositNotifier;
 import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.Depositor.DepositedResource;
@@ -50,6 +50,9 @@ import org.mockito.Mock;
  */
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class PackageFileWalkerTest {
+
+    @Mock
+    InputStream stream;
 
     @Mock
     PackagedResource root1;
@@ -73,23 +76,22 @@ public class PackageFileWalkerTest {
     DepositNotifier notifier;
 
     @Mock
-    PackageFileAnalyzerFactory analyzerFactory;
+    DcsPackageAnalyzerFactory analyzerFactory;
 
     @Mock
-    PackageFileAnalyzer analyzer;
+    DcsPackageAnalyzer analyzer;
 
-    PackageFileWalker toTest = new PackageFileWalker();
+    DefaultPackageWalkerFactory toTest = new DefaultPackageWalkerFactory();
 
     @Before
     public void setUp() {
-        ;
         when(binary.getDescription()).thenReturn(binaryDescription);
 
         when(root1.getChildren()).thenReturn(Arrays.asList(child1));
         when(root2.getChildren()).thenReturn(Collections.emptyList());
         when(child1.getChildren()).thenReturn(Arrays.asList(binary));
 
-        when(analyzer.getContainerRoots(any(File.class))).thenReturn(Arrays.asList(root1, root2));
+        when(analyzer.getContainerRoots(any(InputStream.class))).thenReturn(Arrays.asList(root1, root2));
         when(analyzerFactory.newAnalyzer()).thenReturn(analyzer);
         toTest.setAnalyzerFactory(analyzerFactory);
     }
@@ -97,7 +99,7 @@ public class PackageFileWalkerTest {
     @Test
     public void allObjectsepositedTest() {
         final List<PackagedResource> depositedResources = new ArrayList<>();
-        final PackageWalker walker = toTest.newWalker(new File("whatever"));
+        final PackageWalker walker = toTest.newWalker(stream);
 
         when(deposit.deposit(any(PackagedResource.class), nullable(URI.class))).thenAnswer(i -> {
             depositedResources.add(i.getArgument(0));
@@ -116,7 +118,7 @@ public class PackageFileWalkerTest {
     @Test
     public void depositedInRightContainersTest() {
 
-        final PackageWalker walker = toTest.newWalker(new File("whatever"));
+        final PackageWalker walker = toTest.newWalker(stream);
 
         final URI depositedRoot1 = URI.create("deposit:root1");
         final URI depositedRoot2 = URI.create("deposit:root2");
@@ -138,7 +140,7 @@ public class PackageFileWalkerTest {
 
     @Test
     public void notificationTest() {
-        final PackageWalker walker = toTest.newWalker(new File("whatever"));
+        final PackageWalker walker = toTest.newWalker(stream);
 
         final URI depositedRoot1 = URI.create("deposit:root1");
         final URI depositedRoot2 = URI.create("deposit:root2");

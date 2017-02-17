@@ -17,19 +17,37 @@
 package org.dataconservancy.packaging.ingest;
 
 import java.io.InputStream;
+import java.net.URI;
 
 /**
- * Create a new walker who can walk and deposit resources in the given package.
- *
  * @author apb@jhu.edu
  */
-public interface PackageWalkerFactory {
+public interface DepositBuilder {
 
     /**
-     * Create a walker to walk the contents of a package and deposit its resources.
+     * Specifiy an LDP container to deposit into.
      *
-     * @param pkgSrc A stream of the package.
-     * @return A package walker that walks the given package.
+     * @param container Container URI.
+     * @return configured deposit builder.
      */
-    public PackageWalker newWalker(InputStream pkgSrc);
+    public DepositBuilder intoContainer(URI container);
+
+    /**
+     * Specify the stream of the package to deposit
+     *
+     * @param pkgStream package stream
+     * @return configured deposit builder.
+     */
+    public DepositBuilder withPackage(InputStream pkgStream);
+
+    /**
+     * Specify a listener for deposit events.
+     *
+     * @param listener
+     * @return
+     */
+    public DepositBuilder withListener(EventListener listener);
+
+    /** Perform a deposit */
+    public void perform();
 }

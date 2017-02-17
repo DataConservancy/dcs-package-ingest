@@ -34,10 +34,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.dataconservancy.packaging.ingest.LdpPackageAnalyzer;
+import org.dataconservancy.packaging.ingest.PackageAnalyzer;
 import org.dataconservancy.packaging.ingest.PackagedResource;
 
-import org.apache.jena.atlas.RuntimeIOException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -45,12 +44,16 @@ import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.ResIterator;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author bbrosius@jhu.edu
  */
-public class PackageFileAnalyzer
-        implements LdpPackageAnalyzer<File> {
+public class DcsPackageAnalyzer
+        implements PackageAnalyzer {
+
+    static final Logger LOG = LoggerFactory.getLogger(DcsPackageAnalyzer.class);
 
     public static final String PARAM_EXTRACT_DIR = "pkg.extract.dir";
 
@@ -86,13 +89,13 @@ public class PackageFileAnalyzer
      * @param openPackageService Service to extract/open the package.
      * @param extractDir Extraction directory.
      */
-    public PackageFileAnalyzer(final OpenPackageService openPackageService, final File extractDir) {
+    public DcsPackageAnalyzer(final OpenPackageService openPackageService, final File extractDir) {
         this.packageService = openPackageService;
         this.extractDir = extractDir;
     }
 
     @Override
-    public Collection<PackagedResource> getContainerRoots(final File pkg) {
+    public Collection<PackagedResource> getContainerRoots(final InputStream pkg) {
         final Map<URI, PackagedResource> packageContainerResources = new HashMap<>();
         final List<URI> visitedChildContainers = new ArrayList<>();
         try {
@@ -147,7 +150,7 @@ public class PackageFileAnalyzer
             }
             // Read through the REM File to get the ldp concepts to populate the ldpresources
         } catch (final IOException e) {
-            throw new RuntimeIOException("Failed to open that package to retrieve the bag-info file. " + e
+            throw new RuntimeException("Failed to open that package to retrieve the bag-info file. " + e
                     .getMessage(), e);
         }
 
@@ -309,11 +312,14 @@ public class PackageFileAnalyzer
 
     @Override
     public void cleanUpExtractionDirectory() {
-        try {
-            org.apache.commons.io.FileUtils.deleteDirectory(extractedPackageLocation);
-        } catch (final IOException e) {
-            throw new RuntimeIOException("Unable to clean up extract directory.", e);
+        if (extractedPackageLocation != null && extractedPackageLocation.exists()) {
+            try {
+                org.apache.commons.io.FileUtils.deleteDirectory(extractedPackageLocation);
+            } catch (final IOException e) {
+                throw new RuntimeException("Unable to clean up extract directory.", e);
+            }
+        } else {
+            LOG.info("No extraction directory to clean up");
         }
-
     }
 }

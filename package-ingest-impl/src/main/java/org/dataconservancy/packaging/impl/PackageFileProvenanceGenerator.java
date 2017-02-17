@@ -61,7 +61,7 @@ public class PackageFileProvenanceGenerator implements LdpPackageProvenanceGener
             resource.setBody(new FileInputStream(pkg));
             String mediaType = Files.probeContentType(pkg.toPath());
             if (mediaType == null || mediaType.trim().length() == 0) {
-                mediaType = PackageFileAnalyzer.APPLICATION_OCTETSTREAM;
+                mediaType = DcsPackageAnalyzer.APPLICATION_OCTETSTREAM;
             }
             resource.setMediaType(mediaType);
         } catch (final FileNotFoundException e) {

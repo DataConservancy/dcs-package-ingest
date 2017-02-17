@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+	var source = new EventSource("ingest");
+	source.addEventListener('count', function(event) {
+		document.getElementById("result").innerHTML = event.data;
+	}, false);
+
+	source.onerror = function(event) {
+		var value;
+		for ( var propName in event) {
+			value = event[propName]
+
+			console.log(propName, value);
+		}
+		alert("ERROR: " + event.data);
+		source.close();
+	};
+</script>
+</head>
+<body>
+	<p>
+		Result: <span id="result">?</span>
+	</p>
+</body>
+</html>

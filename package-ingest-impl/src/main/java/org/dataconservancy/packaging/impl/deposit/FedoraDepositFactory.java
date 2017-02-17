@@ -30,6 +30,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,6 +38,7 @@ import org.fcrepo.client.FcrepoClient;
 import org.fcrepo.client.FcrepoOperationFailedException;
 import org.fcrepo.client.FcrepoResponse;
 
+import org.dataconservancy.packaging.impl.RdfUtil;
 import org.dataconservancy.packaging.ingest.DepositFactory;
 import org.dataconservancy.packaging.ingest.Depositor;
 import org.dataconservancy.packaging.ingest.PackagedResource;
@@ -165,7 +167,12 @@ public class FedoraDepositFactory implements DepositFactory {
             this.client = client;
 
             // This is a little hairy, but there's no real alternative!
-            txDepositInto = URI.create(canonicalDepositInto.toString().replace(baseUri, txBase.toString()));
+            if (canonicalDepositInto != null) {
+                txDepositInto = URI.create(canonicalDepositInto.toString().replace(baseUri, txBase.toString()));
+            } else {
+                LOG.warn("No deposit container specifying, using /");
+                txDepositInto = txBase;
+            }
         }
 
         @Override
@@ -187,10 +194,10 @@ public class FedoraDepositFactory implements DepositFactory {
 
                     LOG.debug("Deposited binary has description {}", deposited.describedBy);
 
-                    doReplace(resource.getDescription(), deposited.uri, deposited.describedBy);
+                    updateDescription(resource, deposited);
 
                 } catch (final Exception e) {
-                    throw new RuntimeException("Replace failed", e);
+                    throw new RuntimeException("Updating NonRDFSource description failed: " + e.getMessage(), e);
                 }
             }
 
@@ -198,7 +205,7 @@ public class FedoraDepositFactory implements DepositFactory {
         }
 
         private URI doDeposit(final PackagedResource resource, final URI parent) {
-            LOG.debug("Depositing into {} into {}", resource.getURI(), parent);
+            LOG.debug("Depositing {} into {}", resource.getURI(), parent);
             try (InputStream content = resource.getBody();
                     FcrepoResponse r = client.post(parent)
                             .slug(fileName(resource))
@@ -221,40 +228,30 @@ public class FedoraDepositFactory implements DepositFactory {
             return null;
         }
 
-        private void doReplace(final PackagedResource resource, final URI nonrdfsource, final URI target) {
+        private void updateDescription(final PackagedResource packagedResource,
+                final DepositedResource depositedResource) {
 
-            LOG.debug("Updating contents of {} with {}", target, resource.getURI());
+            LOG.debug("Updating contents of {} with {}", depositedResource.describedBy, packagedResource
+                    .getDescription()
+                    .getURI());
+
+            final Map<URI, URI> mapping = new HashMap<>();
+            mapping.put(packagedResource.getURI(), depositedResource.uri);
+
+            final PackagedResource filteredDescription =
+                    RdfUtil.filterBody(packagedResource.getDescription(),
+                            RdfUtil.remap(mapping));
 
             try (
-                    FcrepoResponse r = client.patch(target)
-                            .body(sparqlAdd(resource, nonrdfsource))
+                    FcrepoResponse r = client.put(depositedResource.describedBy)
+                            .body(filteredDescription.getBody(), filteredDescription.getMediaType())
+                            .preferLenient()
                             .perform()) {
                 checkError(r);
-                LOG.debug("Done updating contents of {} with {}", target, resource.getURI());
             } catch (final Exception e) {
-                throw new RuntimeException("Could not update contents of resource " + target + ": " + e.getMessage(),
-                        e);
+                throw new RuntimeException("Could not update contents of resource " +
+                        depositedResource.describedBy + ": " + e.getMessage(), e);
             }
-        }
-
-        private InputStream sparqlAdd(final PackagedResource resource, final URI into) throws IOException {
-
-            final ByteArrayOutputStream out = new ByteArrayOutputStream();
-            out.write("INSERT DATA {\n".getBytes(UTF_8));
-
-            try (InputStream content = resource.getBody()) {
-                RDFDataMgr.parse(StreamRDFLib.writer(out), content, into.toString(), contentTypeToLang(parse(resource
-                        .getMediaType())
-                                .getMimeType()));
-
-            } catch (final IOException e) {
-                throw new RuntimeException("Could not read package contents of " + resource.getURI(), e);
-            }
-
-            out.write("}".getBytes(UTF_8));
-
-            return new ByteArrayInputStream(out.toByteArray());
-
         }
 
         @Override
@@ -387,7 +384,6 @@ public class FedoraDepositFactory implements DepositFactory {
         } catch (final IOException e) {
             throw new RuntimeException("Error creating spaeql patch", e);
         }
-
     }
 
     private static String fileName(final PackagedResource resource) {
