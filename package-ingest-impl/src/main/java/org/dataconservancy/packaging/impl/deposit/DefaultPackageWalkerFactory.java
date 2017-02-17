@@ -65,7 +65,11 @@ public class DefaultPackageWalkerFactory implements PackageWalkerFactory {
                 try {
                     doWalk(depositor, notifier, analyzer.getContainerRoots(pkg), null);
                 } finally {
-                    analyzer.cleanUpExtractionDirectory();
+                    try {
+                        analyzer.cleanUpExtractionDirectory();
+                    } catch (final Exception e) {
+                        LOG.warn("Could not clean up extraction directory", e);
+                    }
                 }
             }
         };

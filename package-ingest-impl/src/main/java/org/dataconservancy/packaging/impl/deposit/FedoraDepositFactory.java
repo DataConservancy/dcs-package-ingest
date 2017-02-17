@@ -195,7 +195,7 @@ public class FedoraDepositFactory implements DepositFactory {
                     doReplace(resource.getDescription(), deposited.uri, deposited.describedBy);
 
                 } catch (final Exception e) {
-                    throw new RuntimeException("Replace failed", e);
+                    throw new RuntimeException("Updating NonRDFSource description failed: " + e.getMessage(), e);
                 }
             }
 

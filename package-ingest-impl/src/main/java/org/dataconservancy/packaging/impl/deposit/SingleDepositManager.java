@@ -36,6 +36,8 @@ import org.dataconservancy.packaging.ingest.PackagedResource.Type;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages the deposit of a single package
@@ -44,6 +46,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(immediate = true)
 public class SingleDepositManager implements PackageDepositManager {
+
+    static final Logger LOG = LoggerFactory.getLogger(SingleDepositManager.class);
 
     PackageWalkerFactory walkerFactory;
 
@@ -109,6 +113,7 @@ public class SingleDepositManager implements PackageDepositManager {
             depositor.commit();
             listener.onEvent(EventType.SUCCESS, null, null, "Ingest successfully completed");
         } catch (final Throwable e) {
+            LOG.debug("Walking the package produced an error:", e);
 
             // Rollback if error!
             try {

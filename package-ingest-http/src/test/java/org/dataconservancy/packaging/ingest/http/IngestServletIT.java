@@ -19,6 +19,7 @@
 package org.dataconservancy.packaging.ingest.http;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,6 +35,7 @@ import org.dataconservancy.packaging.impl.DcsPackageAnalyzerFactory;
 import org.dataconservancy.packaging.impl.deposit.DefaultPackageWalkerFactory;
 import org.dataconservancy.packaging.impl.deposit.FedoraDepositFactory;
 import org.dataconservancy.packaging.impl.deposit.SingleDepositManager;
+import org.dataconservancy.packaging.ingest.EventType;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -109,11 +111,17 @@ public class IngestServletIT {
     @AfterClass
     public static void tearDown() throws Exception {
         server.stop();
+        System.out.println("Removing temp folder " + testFolder.getRoot().getAbsolutePath());
+        testFolder.delete();
     }
 
     @Test
-    public void smokeTest() throws Exception {
+    public void syncDepositTest() throws Exception {
         final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
+
+        int deposited = 0;
+        int success = 0;
+        int error = 0;
 
         try (FcrepoResponse response = client.post(ingestUri)
                 .body(this.getClass().getResourceAsStream("/packages/test-package.zip"), "application/zip")
@@ -123,10 +131,35 @@ public class IngestServletIT {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 System.out.println(line);
+                if (line.startsWith("event")) {
+                    switch (type(line)) {
+                    case DEPOSIT:
+                        deposited++;
+                        break;
+                    case SUCCESS:
+                        success++;
+                        break;
+                    case ERROR:
+                        System.out.println("\n ERROR: " + bufferedReader.readLine());
+                        error++;
+                        break;
+                    default:
+
+                    }
+                }
             }
             response.getBody().close();
             bufferedReader.close();
         }
+
+        assertEquals(0, error);
+        assertEquals(1, success);
+        assertEquals(5, deposited);
+    }
+
+    private EventType type(final String content) {
+        return EventType.valueOf(content.subSequence(content.indexOf(" "), content.length()).toString().trim()
+                .toUpperCase());
     }
 
     public static File tempDir() throws IOException {
