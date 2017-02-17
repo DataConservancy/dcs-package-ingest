@@ -162,10 +162,16 @@ public class OpenPackageService {
 
     private static ArchiveInputStream archiveStream(final InputStream in) throws ArchiveException {
         final ArchiveStreamFactory af = new ArchiveStreamFactory();
+        final InputStream buffered = buffered(in);
         try {
-            return af.createArchiveInputStream(buffered(in));
+            return af.createArchiveInputStream(buffered);
         } catch (final ArchiveException e) {
-            return af.createArchiveInputStream(decompress(buffered(in)));
+            try {
+                buffered.reset();
+                return af.createArchiveInputStream(buffered(decompress(buffered)));
+            } catch (final IOException x) {
+                throw new RuntimeException(x);
+            }
         }
     }
 }

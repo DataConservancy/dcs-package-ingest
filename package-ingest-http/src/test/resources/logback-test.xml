@@ -24,14 +24,14 @@
 
 
 
-  <logger name="org.fcrepo" additivity="false" level="${fcrepo.log:-DEBUG}">
+  <logger name="org.fcrepo" additivity="false" level="${fcrepo.log:-INFO}">
 
     <appender-ref ref="STDOUT" />
 
   </logger>
 
   <logger name="org.dataconservancy" additivity="false"
-    level="${fcrepo.log:-DEBUG}">
+    level="${fcrepo.log:-INFO}">
 
     <appender-ref ref="STDOUT" />
 

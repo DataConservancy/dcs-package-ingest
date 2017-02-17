@@ -18,17 +18,17 @@
 
 package org.dataconservancy.packaging.ingest.http;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.fcrepo.client.FcrepoClient;
+import org.fcrepo.client.FcrepoOperationFailedException;
 import org.fcrepo.client.FcrepoResponse;
 
 import org.dataconservancy.packaging.impl.DcsPackageAnalyzerFactory;
@@ -43,6 +43,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -119,47 +120,81 @@ public class IngestServletIT {
     public void syncDepositTest() throws Exception {
         final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
 
-        int deposited = 0;
-        int success = 0;
-        int error = 0;
+        final AtomicInteger deposited = new AtomicInteger(0);
+        final AtomicInteger success = new AtomicInteger(0);
+        final AtomicInteger error = new AtomicInteger(0);
 
         try (FcrepoResponse response = client.post(ingestUri)
                 .body(this.getClass().getResourceAsStream("/packages/test-package.zip"), "application/zip")
                 .perform()) {
-            final BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getBody(),
-                    UTF_8));
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                System.out.println(line);
-                if (line.startsWith("event")) {
-                    switch (type(line)) {
-                    case DEPOSIT:
-                        deposited++;
-                        break;
-                    case SUCCESS:
-                        success++;
-                        break;
-                    case ERROR:
-                        System.out.println("\n ERROR: " + bufferedReader.readLine());
-                        error++;
-                        break;
-                    default:
 
-                    }
-                }
-            }
-            response.getBody().close();
-            bufferedReader.close();
+            EventSource.from(response.getBody())
+                    .onEvent((e) -> {
+                        switch (EventType.valueOf(e.event.toUpperCase())) {
+                        case DEPOSIT:
+                            deposited.incrementAndGet();
+                            break;
+                        case SUCCESS:
+                            success.incrementAndGet();
+                            break;
+                        case ERROR:
+                            error.incrementAndGet();
+                        default:
+                        }
+
+                    }).start();
         }
 
-        assertEquals(0, error);
-        assertEquals(1, success);
-        assertEquals(5, deposited);
+        assertEquals(0, error.get());
+        assertEquals(1, success.get());
+        assertEquals(21, deposited.get());
     }
 
-    private EventType type(final String content) {
-        return EventType.valueOf(content.subSequence(content.indexOf(" "), content.length()).toString().trim()
-                .toUpperCase());
+    @Test
+    public void syncDepositBadPackageTest() throws Exception {
+        final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
+
+        final AtomicInteger deposited = new AtomicInteger(0);
+        final AtomicInteger success = new AtomicInteger(0);
+        final AtomicInteger error = new AtomicInteger(0);
+
+        try (FcrepoResponse response = client.post(ingestUri)
+                .body(this.getClass().getResourceAsStream("/packages/malformedObjectPackage.tar.gz"),
+                        "application/x-tgz")
+                .perform()) {
+
+            EventSource.from(response.getBody())
+                    .onEvent((e) -> {
+                        switch (EventType.valueOf(e.event.toUpperCase())) {
+                        case DEPOSIT:
+                            deposited.incrementAndGet();
+                            break;
+                        case SUCCESS:
+                            success.incrementAndGet();
+                            break;
+                        case ERROR:
+                            error.incrementAndGet();
+                        default:
+                        }
+                    }).start();;
+        }
+
+        assertEquals(1, error.get());
+        assertEquals(0, success.get());
+        assertTrue(deposited.get() > 0);
+    }
+
+    @Test
+    public void syncDepositMalformedPackageTest() throws Exception {
+        final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
+
+        try (FcrepoResponse response = client.post(ingestUri)
+                .body(this.getClass().getResourceAsStream("/packages/notAZipFile.zip"), "application/zip")
+                .perform()) {
+            Assert.fail("The request should have failed");
+        } catch (final FcrepoOperationFailedException e) {
+            // expected
+        }
     }
 
     public static File tempDir() throws IOException {

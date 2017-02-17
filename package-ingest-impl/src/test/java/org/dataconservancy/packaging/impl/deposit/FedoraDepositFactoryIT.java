@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -149,7 +150,7 @@ public class FedoraDepositFactoryIT {
         final Depositor test = toTest.newDepositer(myContainer);
 
         // Deposit a container into the default container (myContaier)
-        test.deposit(binaryResource("CONTENT", rdfResource("<> a <test:binaryDescription>")));
+        test.deposit(binaryResource("CONTENT", rdfResource("<BINARY> a <test:binaryDescription>")));
 
         test.commit();
 
@@ -202,7 +203,7 @@ public class FedoraDepositFactoryIT {
         toRemap.put(URI.create("test:resource_1"), containerDeposit.uri);
 
         final DepositedResource binaryDeposit = test.deposit(binaryResource("CONTENT", rdfResource(
-                "<> <test:rel> <test:resource_1>")), containerDeposit.uri);
+                "<BINARY> <test:rel> <test:resource_1>")), containerDeposit.uri);
         toRemap.put(URI.create("test:resource_2"), binaryDeposit.uri);
 
         test.remap(containerDeposit.uri, toRemap);
@@ -293,6 +294,14 @@ public class FedoraDepositFactoryIT {
         when(resource.getDescription()).thenReturn(description);
         when(resource.getBody()).thenReturn(new ByteArrayInputStream(content.getBytes(UTF_8)));
 
+        try {
+            final String filtered = IOUtils.toString(description.getBody(), UTF_8).replaceAll("BINARY", resource
+                    .getURI()
+                    .toString());
+            when(description.getBody()).thenReturn(new ByteArrayInputStream(filtered.getBytes(UTF_8)));
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
         return resource;
     }
 
