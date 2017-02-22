@@ -46,13 +46,10 @@ If ingesting a package succeeds, further interaction with the newly created reso
   * Zipping up a file system
   * Export from a repository
   * Generating resources by some local process (e.g. a desktop GUI, laboratory instrument, etc)
-
-2. Choose a [container](http://www.w3.org/TR/ldp/#ldpc) in the repository to deposit into (an LDPC, identified by its URI)
+2. Choose a container in the repository to deposit into (an [LDPC](http://www.w3.org/TR/ldp/#ldpc), identified by its URI)
   * No specific discovery mechanism is defined; it is presumed that a client can inspect repository resources and pick one to deposit into, or is given a URI for this purpose.
-
 3. Submit the package to the container.
   * A new member resource will be created, and contents of package placed into it 
-
 4. Follow the deposit results.
   * An event stream indicates processing as it happens, and indicates success or failure
 
