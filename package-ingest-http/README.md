@@ -9,7 +9,7 @@ Synchronous usage involves a single request/response pair.  The request is a PO
 
 The synchronous paradigm is most suited to usage with command line tools.  For example, suppose that you want to deposit the contents a directory and all its descendents from your local machine, and you wish to use a simple zipped tar file as the packaging. 
 
-    tar czf - /path/to/directory | curl -X POST -H “Content-Type: application/tgz” --data-binary @- http://path/to/endpoint | do_something_with_result_stream.sh
+    tar czf - /path/to/directory | curl -X POST -H "Content-Type: application/tgz" --data-binary @- http://path/to/endpoint | do_something_with_result_stream.sh
 
 ## Asynchronous
 Asynchronous usage involves initiating a deposit via an empty POST.  The server responds with links to a resource used for upload (POSTing the content of the package), and a resource for monitoring the deposit status.  
