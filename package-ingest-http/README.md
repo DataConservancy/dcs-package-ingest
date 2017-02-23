@@ -61,7 +61,7 @@ A _package_ is a file archive of some sort (e.g. a tar file, zip file).  
 * If the deposit is not successful, a 4xx or 5xx result will be returned.  
 
 ## Event Stream
-The deposit event stream has a media type`text/event-stream`, as defined in the [Sserver-Sent Events](http://www.w3.org/TR/eventsource/) specification.  The event stream contains the following events:
+The deposit event stream has a media type`text/event-stream`, as defined in the [Server-Sent Events](http://www.w3.org/TR/eventsource/) specification.  The event stream contains the following events:
 * `deposit` - Indicates that single resource from the package has been deposited.  The data associated with this event includes the original URI of the resource in the package, and the URI of the resource as deposited in the repository 
 * `remap` - Indicates that local URIs present in a resource have been re-mapped to repository URIs.  For example, if resource A links to resource B, and A is deposited before B; the link will reference the URI of B as present in the package.  A remap of A will replace B’s URI with its corresponding repository resource URI; which is only known after B has been deposited.
 * `error` - The deposit process has failed, and no resources have been persisted in the repository.  The data associated with this event contains an explanation of the failure in human readable text. 
