@@ -16,6 +16,7 @@
 
 package org.dataconservancy.packaging.ingest.http;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -35,6 +36,7 @@ import org.dataconservancy.packaging.impl.deposit.FedoraDepositFactory;
 import org.dataconservancy.packaging.impl.deposit.SingleDepositManager;
 import org.dataconservancy.packaging.ingest.EventType;
 
+import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -192,6 +194,18 @@ public class IngestServletIT {
             Assert.fail("The request should have failed");
         } catch (final FcrepoOperationFailedException e) {
             // expected
+        }
+    }
+
+    @Test
+    public void otionsTest() throws Exception {
+        final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
+
+        try (FcrepoResponse response = client.options(ingestUri).perform()) {
+            assertEquals("text/turtle", response.getContentType());
+            assertEquals(200, response.getStatusCode());
+            final String body = IOUtils.toString(response.getBody(), UTF_8);
+            assertTrue(body.length() > 100);
         }
     }
 

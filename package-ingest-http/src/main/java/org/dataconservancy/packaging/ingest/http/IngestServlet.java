@@ -22,6 +22,7 @@ import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +39,7 @@ import org.dataconservancy.packaging.ingest.DepositBuilder;
 import org.dataconservancy.packaging.ingest.EventType;
 import org.dataconservancy.packaging.ingest.PackageDepositManager;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,44 +66,17 @@ public class IngestServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
+    protected void doOptions(final HttpServletRequest req, final HttpServletResponse resp)
             throws ServletException, IOException {
 
-        LOG.info("Async supported? " + req.isAsyncSupported());
-        LOG.info("Async started? " + req.isAsyncStarted());
-        final AsyncContext cxt = req.startAsync();
-        cxt.setTimeout(0);
+        resp.setStatus(SC_OK);
+        resp.setHeader("Content-Type", "text/turtle");
+        resp.setHeader("Accept-Post", "application/zip,application/x-tgz,application/tar,application/gzip");
+        resp.setHeader("Allow", "POST,HEAD,GET,OPTIONS");
 
-        exe.execute(() -> {
-            final HttpServletResponse response = response(cxt);
-            response.setStatus(SC_OK);
-            response.setCharacterEncoding("UTF-8");
-            response.setHeader("Cache-Control", "no-cache");
-            response.setContentType("text/event-stream");
-
-            try {
-                final PrintWriter out = response.getWriter();
-
-                for (int i = 0; i < 10; i++) {
-                    out.println("event: count");
-                    out.println("data: " + i);
-                    out.println();
-                    out.flush();
-                    response.flushBuffer();
-                    Thread.sleep(1000);
-                }
-
-                out.println("event: error");
-                out.println("data: done");
-                out.println("\n");
-                out.flush();
-                response.flushBuffer();
-                cxt.complete();
-            } catch (final Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-
+        try (OutputStream out = resp.getOutputStream()) {
+            IOUtils.copy(this.getClass().getResourceAsStream("/options.ttl"), out);
+        }
     }
 
     @Override
