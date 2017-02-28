@@ -1,0 +1,38 @@
+<> a       <http://fedora.info/definitions/v4/service#ServiceDocument> ;
+        <http://fedora.info/definitions/v4/service#isServiceDocumentFor>
+                <http://localhost/fcrepo/rest/> ;
+        <http://www.openarchives.org/ore/terms/describes>
+                <#services> .
+
+<#1255031c-d4d9-4a73-8c92-efb9c7382dfe>
+        a       <http://fedora.info/definitions/v4/service#ServiceInstance> ;
+        <http://fedora.info/definitions/v4/service#hasEndpoint>
+                <http://localhost/services//apix:load> ;
+        <http://fedora.info/definitions/v4/service#isServiceInstanceOf>
+                <http://fedora.info/definitions/v4/api-extension#LoaderService>;
+        <http://fedora.info/definitions/v4/service#serviceInstanceExposedBy>
+                <http://localhost/fcrepo/rest/> .
+
+<#services>  <http://www.openarchives.org/ore/terms/aggregates>
+                <#1255031c-d4d9-4a73-8c92-efb9c7382dfe> , <#b1ca04e3-9246-4e46-8946-c4eca82f78d3>, <#9693c5ed-2133-4332-8deb-799e0cbbd10a> .            
+<#9693c5ed-2133-4332-8deb-799e0cbbd10a>
+        a       <http://fedora.info/definitions/v4/service#ServiceInstance> ;
+        <http://fedora.info/definitions/v4/service#hasEndpoint>
+                <http://localhost/services/svc:xmlmetadata/> ;
+        <http://fedora.info/definitions/v4/service#isFunctionOf>
+                <http://localhost/fcrepo/rest/> ;
+        <http://fedora.info/definitions/v4/service#isServiceInstanceOf>
+                <http://acdc.amherst.edu/extensions#XmlMetadataService> ;
+        <http://fedora.info/definitions/v4/service#serviceInstanceExposedBy>
+                <http://localhost/fcrepo/rest/> .
+
+<#b1ca04e3-9246-4e46-8946-c4eca82f78d3>
+        a       <http://fedora.info/definitions/v4/service#ServiceInstance> ;
+        <http://fedora.info/definitions/v4/service#hasEndpoint>
+                <http://localhost/services/svc:template> ;
+        <http://fedora.info/definitions/v4/service#isFunctionOf>
+                <http://localhost/fcrepo/rest/> ;
+        <http://fedora.info/definitions/v4/service#isServiceInstanceOf>
+                <http://acdc.amherst.edu/extensions#TemplateService> ;
+        <http://fedora.info/definitions/v4/service#serviceInstanceExposedBy>
+                <http://localhost/fcrepo/rest/> .
