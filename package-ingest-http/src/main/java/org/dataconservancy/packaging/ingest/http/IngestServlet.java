@@ -22,9 +22,11 @@ import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.util.Enumeration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -40,6 +42,9 @@ import org.dataconservancy.packaging.ingest.EventType;
 import org.dataconservancy.packaging.ingest.PackageDepositManager;
 
 import org.apache.commons.io.IOUtils;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +53,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("serial")
 @WebServlet(asyncSupported = true, name = "PackageIngest", urlPatterns = { "/ingest" })
+@Component(service = HttpServlet.class, property = { "osgi.http.whiteboard.servlet.pattern=/ingest" })
 public class IngestServlet extends HttpServlet {
 
     static final Logger LOG = LoggerFactory.getLogger(IngestServlet.class);
@@ -55,6 +61,16 @@ public class IngestServlet extends HttpServlet {
     ExecutorService exe = Executors.newCachedThreadPool();
 
     PackageDepositManager depositManager;
+
+    /**
+     * Set the package deposit manager.
+     *
+     * @param mgr deposit manager impl.
+     */
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
+    public void setPackageDepositManager(final PackageDepositManager mgr) {
+        this.depositManager = mgr;
+    }
 
     /** No arg constructor */
     public IngestServlet() {
@@ -69,6 +85,10 @@ public class IngestServlet extends HttpServlet {
     protected void doOptions(final HttpServletRequest req, final HttpServletResponse resp)
             throws ServletException, IOException {
 
+        LOG.debug("Servicing OPTIONS " + req.getPathInfo());
+
+        printHeaders(req);
+
         resp.setStatus(SC_OK);
         resp.setHeader("Content-Type", "text/turtle");
         resp.setHeader("Accept-Post", "application/zip,application/x-tgz,application/tar,application/gzip");
@@ -80,8 +100,36 @@ public class IngestServlet extends HttpServlet {
     }
 
     @Override
+    public void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException,
+            IOException {
+
+        LOG.debug("Servicing GET " + req.getPathInfo());
+
+        printHeaders(req);
+
+        resp.setStatus(SC_OK);
+        resp.setHeader("Content-Type", "text/turtle");
+
+        try (OutputStream out = resp.getOutputStream();
+                InputStream options = this.getClass().getResourceAsStream("/options.ttl")) {
+            IOUtils.copy(options, out);
+        }
+    }
+
+    private void printHeaders(final HttpServletRequest req) {
+        final Enumeration<String> headers = req.getHeaderNames();
+        while (headers.hasMoreElements()) {
+            final String key = headers.nextElement();
+            LOG.debug("{} : {}", key, req.getHeader(key));
+        }
+    }
+
+    @Override
     protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
             throws ServletException, IOException {
+
+        LOG.debug("Servicing POST " + req.getPathInfo());
+        printHeaders(req);
 
         final AsyncContext cxt = req.startAsync();
         cxt.setTimeout(0);
@@ -146,7 +194,9 @@ public class IngestServlet extends HttpServlet {
                 default:
                     out.println("event: " + event.toString());
                     if (detail != null) {
-                        out.println("data: " + detail);
+                        for (final String line : detail.toString().split("\n")) {
+                            out.println("data: " + line);
+                        }
                     }
                     out.println();
                 }
@@ -171,9 +221,9 @@ public class IngestServlet extends HttpServlet {
     }
 
     private static URI uriFromRequest(final HttpServletRequest req) {
-        if (req.getHeader("Apix-Ldp-Container") != null) {
-            LOG.debug("Got container {} fom http header", req.getHeader("Apix-Ldp-Container"));
-            return URI.create(req.getHeader("Apix-Ldp-Container"));
+        if (req.getHeader("Apix-Resource") != null) {
+            LOG.debug("Got container {} fom http header", req.getHeader("Apix-Resource"));
+            return URI.create(req.getHeader("Apix-Resource"));
         } else if (req.getParameter("container") != null) {
             LOG.debug("Got container {} from parameter", req.getParameter("container"));
             return URI.create(req.getParameter("container"));

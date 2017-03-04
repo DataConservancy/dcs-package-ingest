@@ -5,6 +5,6 @@
 <> a apix:Extension;
     rdfs:label "Data Conservancy Package Ingest Extension";
     rdfs:comment "An extension that ingests resources contained in a package";
-    apix:exposesService "http://dataconservancy.org/services/packageIngest";
+    apix:exposesService <http://dataconservancy.org/services/packageIngest>;
     apix:exposesServiceAt "dcs:ingest";
     apix:bindsTo ldp:Container .
