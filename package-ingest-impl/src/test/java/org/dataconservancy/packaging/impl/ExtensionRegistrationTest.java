@@ -96,7 +96,6 @@ public class ExtensionRegistrationTest {
         when(post.body(any(InputStream.class), eq("text/plain"))).thenReturn(post);
         when(post.perform()).thenReturn(postResponse);
         when(postResponse.getStatusCode()).thenReturn(303);
-        when(postResponse.getLocation()).thenReturn(URI.create("http://example.org/success"));
 
         new ExtensionRegistration().withClient(client).withPort(1234).withHostName(hostName).withPath(path)
                 .withRepositoryBaseUri(baseUri).load();
