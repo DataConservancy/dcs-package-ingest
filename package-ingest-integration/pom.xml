@@ -210,6 +210,13 @@
 
     <dependency>
       <groupId>org.dataconservancy.packaging</groupId>
+      <artifactId>package-ingest-http</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.dataconservancy.packaging</groupId>
       <artifactId>package-ingest-jar</artifactId>
       <version>${project.version}</version>
     </dependency>
