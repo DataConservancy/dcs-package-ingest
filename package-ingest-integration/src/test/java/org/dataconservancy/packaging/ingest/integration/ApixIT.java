@@ -92,7 +92,7 @@ public class ApixIT implements KarafIT {
         });
 
         // TODO: Make discovery easier, maybe jsonld, or a library.
-        ingestServiceUri = KarafIT.attempt(10, () -> {
+        ingestServiceUri = KarafIT.attempt(60, () -> {
             try (FcrepoResponse head = client.head(containerUri).perform()) {
                 try (FcrepoResponse serviceDoc = client.get(head.getLinkHeaders("service").get(0)).accept(
                         "text/turtle").perform()) {
