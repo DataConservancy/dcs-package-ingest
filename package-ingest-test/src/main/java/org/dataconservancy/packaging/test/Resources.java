@@ -14,26 +14,16 @@
  * limitations under the License.
  */
 
-package org.dataconservancy.packaging.ingest.spring;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.servlet.ServletComponentScan;
+package org.dataconservancy.packaging.test;
 
 /**
+ * Empty class, just to help get test resources in OSGi
+ * <p>
+ * use Resources.class.getResourceAsStream(name);
+ * </p>
+ *
  * @author apb@jhu.edu
  */
-@SpringBootApplication
-@ServletComponentScan
-public abstract class Application {
-
-    /**
-     * Run the spring boot app,
-     *
-     * @param args commandline args.
-     */
-    public static void main(final String[] args) {
-        SpringApplication.run(Application.class, args);
-    }
+public abstract class Resources {
 
 }

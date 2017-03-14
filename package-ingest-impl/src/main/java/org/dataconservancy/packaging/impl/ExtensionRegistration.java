@@ -21,7 +21,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -51,7 +53,7 @@ public class ExtensionRegistration implements Runnable {
 
     private int port = 0;
 
-    private String host = hostname();
+    private String host = ip(hostname());
 
     private String path = "";
 
@@ -181,11 +183,8 @@ public class ExtensionRegistration implements Runnable {
                 .toString().getBytes(UTF_8)), "text/plain").perform()) {
             checkError(response);
 
-            if (response.getStatusCode() == 303) {
-                LOG.info("Extension successfully registered as <{}>", response.getLocation());
-            }
+            LOG.info("Extension successfully registered");
         }
-
     }
 
     /** Attempt to load an extension infinitely. */
@@ -194,8 +193,15 @@ public class ExtensionRegistration implements Runnable {
         while (true) {
             try {
                 load();
+                return;
             } catch (final Exception e) {
                 LOG.info("Failed loading extension: " + e.getMessage());
+                try {
+                    Thread.sleep(1000);
+                } catch (final InterruptedException i) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             }
         }
     }
@@ -251,11 +257,19 @@ public class ExtensionRegistration implements Runnable {
         }
     }
 
+    private static String ip(final String hostname) {
+        try {
+            final InetAddress address = InetAddress.getByName(hostname);
+            return address.getHostAddress();
+        } catch (final UnknownHostException e) {
+            return hostname;
+        }
+    }
+
     private void checkError(final FcrepoResponse response) throws FcrepoOperationFailedException, IOException {
         if (response.getStatusCode() >= 400) {
             throw new FcrepoOperationFailedException(response.getUrl(), response.getStatusCode(),
                     IOUtils.toString(response.getBody(), "utf8"));
         }
     }
-
 }
