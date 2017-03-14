@@ -1,11 +1,9 @@
 /*
- * Licensed to DuraSpace under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.
+ * Copyright 2017 Johns Hopkins University
  *
- * DuraSpace licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -18,13 +16,14 @@
 
 package org.dataconservancy.packaging.ingest.integration;
 
-import static org.dataconservancy.packaging.ingest.integration.JarRunner.jar;
 import static org.dataconservancy.packaging.ingest.integration.KarafIT.attempt;
+import static org.dataconservancy.packaging.test.JarRunner.jar;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.maven;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
+import java.io.File;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -76,11 +75,10 @@ public class ApixIT implements KarafIT {
 
     @BeforeClass
     public static void init() throws Exception {
-        ingest = jar(System.getProperty("package.ingest.jar"))
+        ingest = jar(new File(System.getProperty("package.ingest.jar")))
                 .logOutput(LoggerFactory.getLogger("IngestExtension"))
                 .withEnv("REPOSITORY_BASEURI", REPOSITORY_BASEURI)
                 .start();
-        Thread.sleep(5000);
     }
 
     @Before

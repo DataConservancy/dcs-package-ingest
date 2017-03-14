@@ -1,11 +1,9 @@
 /*
- * Licensed to DuraSpace under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.
+ * Copyright 2017 Johns Hopkins University
  *
- * DuraSpace licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -16,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.dataconservancy.packaging.ingest.integration;
+package org.dataconservancy.packaging.test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -38,8 +37,15 @@ public class JarRunner {
 
     private Logger log;
 
-    public static JarRunner jar(final String jarPath, final String... args) {
-        return new JarRunner(jarPath, args);
+    /**
+     * Create a jar runner on the given jar and arguments.
+     *
+     * @param jar jar file
+     * @param args command line arguments, if any.
+     * @return initialized jar runner.
+     */
+    public static JarRunner jar(final File jar, final String... args) {
+        return new JarRunner(jar.getAbsolutePath(), args);
     }
 
     /**
@@ -78,6 +84,12 @@ public class JarRunner {
         this.builder = new ProcessBuilder(cmd.toArray(new String[0]));
     }
 
+    /**
+     * Run the executable jar, returning a handle to the running process.
+     *
+     * @return process
+     * @throws IOException if there are problems executing.
+     */
     public Process start() throws IOException {
         final Process proc = builder.start();
 

@@ -1,11 +1,9 @@
 /*
- * Licensed to DuraSpace under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information
- * regarding copyright ownership.
+ * Copyright 2017 Johns Hopkins University
  *
- * DuraSpace licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
- * compliance with the License.  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -19,8 +17,6 @@
 package org.dataconservancy.packaging.ingest.jar;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.file.Files;
 
@@ -123,14 +119,6 @@ public abstract class Main {
         mgr.setWalkerFactory(ldpc);
 
         return new IngestServlet(mgr);
-    }
-
-    private static String getPort() {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return Integer.toString(socket.getLocalPort());
-        } catch (final IOException e) {
-            return "32080";
-        }
     }
 
     private static String getVal(final String key, final String defaultValue) {
