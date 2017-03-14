@@ -19,23 +19,27 @@
 package org.dataconservancy.packaging.ingest.integration;
 
 import static org.dataconservancy.packaging.ingest.integration.JarRunner.jar;
+import static org.dataconservancy.packaging.ingest.integration.KarafIT.attempt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.maven;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.fcrepo.client.FcrepoClient;
+import org.fcrepo.client.FcrepoOperationFailedException;
 import org.fcrepo.client.FcrepoResponse;
 
 import org.dataconservancy.packaging.ingest.EventType;
 import org.dataconservancy.packaging.ingest.http.EventSource;
 import org.dataconservancy.packaging.test.Resources;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.ResultSet;
@@ -84,7 +88,7 @@ public class ApixIT implements KarafIT {
         assertTrue(ingest.isAlive());
         final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
 
-        containerUri = KarafIT.attempt(10, () -> {
+        containerUri = attempt(10, () -> {
             try (FcrepoResponse post = client.post(URI.create(REPOSITORY_BASEURI)).slug(name.getMethodName())
                     .perform()) {
                 return post.getLocation();
@@ -121,32 +125,43 @@ public class ApixIT implements KarafIT {
 
     @Test
     public void syncDepositTest() throws Exception {
-        final FcrepoClient client = FcrepoClient.client().throwExceptionOnFailure().build();
+        final FcrepoClient client = FcrepoClient.client().build();
 
         final AtomicInteger deposited = new AtomicInteger(0);
         final AtomicInteger success = new AtomicInteger(0);
         final AtomicInteger error = new AtomicInteger(0);
 
-        try (FcrepoResponse response = client.post(ingestServiceUri)
-                .body(Resources.class.getResourceAsStream("/packages/test-package.zip"), "application/zip")
-                .perform()) {
+        attempt(10, () -> {
+            try (FcrepoResponse response = client.post(ingestServiceUri)
+                    .body(Resources.class.getResourceAsStream("/packages/test-package.zip"), "application/zip")
+                    .perform()) {
 
-            EventSource.from(response.getBody())
-                    .onEvent((e) -> {
-                        switch (EventType.valueOf(e.event().toUpperCase())) {
-                        case DEPOSIT:
-                            deposited.incrementAndGet();
-                            break;
-                        case SUCCESS:
-                            success.incrementAndGet();
-                            break;
-                        case ERROR:
-                            error.incrementAndGet();
-                        default:
-                        }
+                if (response.getStatusCode() > 299) {
+                    LOG.warn("Request to {} failed, {}", ingestServiceUri, response.getStatusCode());
+                    response.getHeaders().entrySet().forEach(e -> LOG.debug(e.toString()));
+                    LOG.debug("Body: " + IOUtils.toString(response.getBody(), StandardCharsets.UTF_8));
+                    throw new FcrepoOperationFailedException(ingestServiceUri, response.getStatusCode(), Integer
+                            .toString(response.getStatusCode()));
+                }
 
-                    }).start();
-        }
+                EventSource.from(response.getBody())
+                        .onEvent((e) -> {
+                            switch (EventType.valueOf(e.event().toUpperCase())) {
+                            case DEPOSIT:
+                                deposited.incrementAndGet();
+                                break;
+                            case SUCCESS:
+                                success.incrementAndGet();
+                                break;
+                            case ERROR:
+                                error.incrementAndGet();
+                            default:
+                            }
+
+                        }).start();
+                return true;
+            }
+        });
 
         assertEquals(0, error.get());
         assertEquals(1, success.get());

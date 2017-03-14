@@ -111,6 +111,7 @@ public interface KarafIT {
                     "package.ingest.jar")),
 
             deployFile("org.fcrepo.apix.jena.cfg"),
+            deployFile("org.ops4j.pax.logging.cfg"),
             deployFile("org.fcrepo.apix.registry.http.cfg"),
             deployFile("org.fcrepo.apix.routing.cfg"),
             deployFile("org.fcrepo.apix.loader.cfg"),
