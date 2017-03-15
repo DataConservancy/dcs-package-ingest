@@ -1,6 +1,6 @@
 language: java
 sudo: true
-install: true
+install: eval mvn -e install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 script:
   - sudo service mysql stop
   - sudo service postgresql stop
