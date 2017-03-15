@@ -61,7 +61,7 @@
           <execution>
             <phase>initialize</phase>
             <configuration>
-              <tasks if="docker">
+              <tasks>
                 <property environment="env" />
                 <path id="combined-PATH">
                   <pathelement path="${env.PATH}" />
@@ -86,7 +86,7 @@
             <id>install</id>
             <phase>install</phase>
             <configuration>
-              <tasks>
+              <tasks if="docker">
                 <exec executable="docker">
                   <arg value="build" />
                   <arg
