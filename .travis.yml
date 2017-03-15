@@ -1,6 +1,5 @@
 language: java
 sudo: true
-install: eval mvn -e install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 script:
   - sudo service mysql stop
   - sudo service postgresql stop
@@ -13,7 +12,7 @@ script:
   - sudo service resolvconf stop
   - sudo service sshguard stop
   - sudo service ssh stop
-  - mvn -X -e install
+  - mvn clean install
 jdk:
 - oraclejdk8
 after_failure:
