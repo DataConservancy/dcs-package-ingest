@@ -61,7 +61,7 @@
           <execution>
             <phase>initialize</phase>
             <configuration>
-              <tasks>
+              <tasks if="docker">
                 <property environment="env" />
                 <path id="combined-PATH">
                   <pathelement path="${env.PATH}" />
