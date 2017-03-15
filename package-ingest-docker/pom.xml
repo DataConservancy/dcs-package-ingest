@@ -1,0 +1,113 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.dataconservancy.packaging</groupId>
+    <artifactId>package-ingest</artifactId>
+    <version>0.1.3-SNAPSHOT</version>
+  </parent>
+  <packaging>pom</packaging>
+  <artifactId>package-ingest-docker</artifactId>
+
+
+  <properties>
+    <jar.file>package-ingest.jar</jar.file>
+  </properties>
+
+  <build>
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>resources</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.dataconservancy.packaging</groupId>
+                  <artifactId>package-ingest-jar</artifactId>
+                  <version>${project.version}</version>
+                  <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                  <destFileName>${jar.file}</destFileName>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <configuration>
+              <tasks>
+                <property environment="env" />
+                <path id="combined-PATH">
+                  <pathelement path="${env.PATH}" />
+                  <pathelement path="${env.Path}" />
+                </path>
+                <property name="PATH" refid="combined-PATH" />
+                <condition property="docker">
+                  <or>
+                    <available file="docker.exe" filepath="${PATH}" />
+                    <available file="docker" filepath="${PATH}" />
+                  </or>
+                </condition>
+                <echo>Build docker images: ${docker}</echo>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+
+          <execution>
+            <id>install</id>
+            <phase>install</phase>
+            <configuration>
+              <tasks>
+                <exec executable="docker">
+                  <arg value="build" />
+                  <arg
+                    value="--tag=dataconservancy/package-ingest:${project.version}" />
+                  <arg value="target/classes" />
+                </exec>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+  </build>
+</project>
