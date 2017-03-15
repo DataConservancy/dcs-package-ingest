@@ -40,6 +40,7 @@
     <module>package-ingest-http</module>
     <module>package-ingest-jar</module>
     <module>package-ingest-test</module>
+    <module>package-ingest-docker</module>
   </modules>
 
   <!-- Properties ================================================ -->

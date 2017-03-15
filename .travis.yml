@@ -12,7 +12,7 @@ script:
   - sudo service resolvconf stop
   - sudo service sshguard stop
   - sudo service ssh stop
-  - mvn install
+  - mvn clean install
 jdk:
 - oraclejdk8
 after_failure:
