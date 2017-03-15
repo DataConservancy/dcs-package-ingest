@@ -1,5 +1,6 @@
 language: java
 sudo: true
+install: true
 script:
   - sudo service mysql stop
   - sudo service postgresql stop
