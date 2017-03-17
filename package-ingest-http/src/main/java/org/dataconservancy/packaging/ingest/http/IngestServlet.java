@@ -222,8 +222,8 @@ public class IngestServlet extends HttpServlet {
 
     private static URI uriFromRequest(final HttpServletRequest req) {
         if (req.getHeader("Apix-Resource") != null) {
-            LOG.debug("Got container {} fom http header", req.getHeader("Apix-Resource"));
-            return URI.create(req.getHeader("Apix-Resource"));
+            LOG.debug("Got container {} fom http header", req.getHeader("Apix-Ldp-Resource"));
+            return URI.create(req.getHeader("Apix-Ldp-Resource"));
         } else if (req.getParameter("container") != null) {
             LOG.debug("Got container {} from parameter", req.getParameter("container"));
             return URI.create(req.getParameter("container"));

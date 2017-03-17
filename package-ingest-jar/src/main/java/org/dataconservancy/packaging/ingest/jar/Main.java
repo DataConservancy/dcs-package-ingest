@@ -65,6 +65,8 @@ public abstract class Main {
 
     public static void main(final String[] args) throws Exception {
 
+        LogUtil.adjustLogLevels();
+
         final Servlet ingest = initServlet();
         final Server server = startContainer(ingest, PORT, PATH);
 
