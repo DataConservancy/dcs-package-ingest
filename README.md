@@ -60,6 +60,6 @@ in Docker for demonstration or evaluation purposes.  It runs a API-X, Fedora, an
 images.  See [package-ingest docker](package-ingest-docker/README.md) for a description of the package ingest
 docker image, and how it is configured.
 
-1. Install docker and docker-compose.  See the [API-X demo instructions](https://github.com/birkland/fcrepo-api-x-demo/blob/master/README.md) for how to install and verify docker and docker-compose
+1. Install docker and docker-compose.  See the [API-X demo instructions](https://github.com/fcrepo4-labs/fcrepo-api-x-demo/blob/master/README.md) for how to install and verify docker and docker-compose
 2. Edit the `.env` file to set any environment variables you want (e.g. to change the defaults).  This is optional, except for users of `docker-machine`.  Docker-machine users have to edt the `APIX_BASEURI` variable and change the host from `localhost` to the IP address of their `docker-machine` instance.
 3. Start the services via `docker-compose up -d`.  Use `docker-compose down` to stop all containers and destroy all daya, `docker-compose stop` merely to stop the containers.
