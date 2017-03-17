@@ -1,0 +1,35 @@
+version: "2"
+
+services:
+
+  fcrepo:
+      image: fcrepoapix/apix-fcrepo:4.7.1
+      container_name: fcrepo
+      env_file: .env
+      ports:
+        - "${FCREPO_PORT}:${FCREPO_PORT}"
+
+  apix:
+      image: fcrepoapix/apix-core:latest
+      container_name: apix
+      env_file: .env
+      ports:
+        - "${APIX_PORT}:${APIX_PORT}"
+        - "${APIX_LOADER_PORT}:${APIX_LOADER_PORT}"
+      depends_on:
+        - fcrepo
+
+  package-ingest:
+      image: dataconservancy/package-ingest:0.1.3-SNAPSHOT
+      container_name: package-ingest
+      environment:
+        - REPOSITORY_BASEURI=http://apix/fcrepo/rest
+        - PACKAGE_INGEST_PORT=32080
+        - LOG.org.dataconservancy=DEBUG
+      ports:
+        - "32080:32080"
+      depends_on:
+        - apix
+      links:
+        - apix:localhost
+      
