@@ -156,6 +156,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.tika</groupId>
+      <artifactId>tika-java7</artifactId>
+      <version>${tika.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.dataconservancy.packaging</groupId>
       <artifactId>package-ingest-api</artifactId>
       <version>${project.version}</version>
