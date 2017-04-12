@@ -3,14 +3,14 @@ version: "2"
 services:
 
   fcrepo:
-      image: fcrepoapix/apix-fcrepo:4.7.1
+      image: fcrepoapix/apix-fcrepo:4.7.1-1
       container_name: fcrepo
       env_file: .env
       ports:
         - "${FCREPO_PORT}:${FCREPO_PORT}"
 
   apix:
-      image: fcrepoapix/apix-core:latest
+      image: fcrepoapix/apix-core:0.2.0-SNAPSHOT-1
       container_name: apix
       env_file: .env
       ports:
