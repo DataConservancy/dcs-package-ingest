@@ -66,7 +66,7 @@ docker image, and how it is configured.
 3. Start the services via `docker-compose up -d`.  Use `docker-compose down` to stop all containers and destroy all daya, `docker-compose stop` merely to stop the containers.
 
 ## Deposit a package
-1. Create (or select) a container in Fedora to deposit into, vue the UI or command line (e.g. `curl -X POST -H "Slug: myContainer" http://localhost/fcrepo/rest), that will create a container `myContainer` at `http://localhost/fcrepo/rest/myContainer`
+1. Create (or select) a container in Fedora to deposit into, vue the UI or command line (e.g. `curl -X POST -H "Slug: myContainer" http://localhost/fcrepo/rest`), that will create a container `myContainer` at `http://localhost/fcrepo/rest/myContainer`
 2. Obtain a package to deposit, or use a [test package](package-ingest-test/src/main/resources/packages/test-package.zip)
 3. Use standard API-X service discovery to find the package ingest endpoint for the container, or just craft a URI that you know will work in the demo environment `http://localhost/services/myContainer/dcs:ingest`
 4. POST the package to the ingest endpoint for the container.   `curl -v -X POST -H "Content-Type: application/zip" --data-binary @my-package.zip http://localhost/services/myContainer/dcs:ingest`
