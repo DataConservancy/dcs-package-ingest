@@ -60,6 +60,19 @@ in Docker for demonstration or evaluation purposes.  It runs a API-X, Fedora, an
 images.  See [package-ingest docker](package-ingest-docker/README.md) for a description of the package ingest
 docker image, and how it is configured.
 
+## Start the package ingest extension, Fedora, and API-X in Dovker
 1. Install docker and docker-compose.  See the [API-X demo instructions](https://github.com/fcrepo4-labs/fcrepo-api-x-demo/blob/master/README.md) for how to install and verify docker and docker-compose
 2. Edit the `.env` file to set any environment variables you want (e.g. to change the defaults).  This is optional, except for users of `docker-machine`.  Docker-machine users have to edt the `APIX_BASEURI` variable and change the host from `localhost` to the IP address of their `docker-machine` instance.
 3. Start the services via `docker-compose up -d`.  Use `docker-compose down` to stop all containers and destroy all daya, `docker-compose stop` merely to stop the containers.
+
+## Deposit a package
+1. Create (or select) a container in Fedora to deposit into, vue the UI or command line (e.g. `curl -X POST -H "Slug: myContainer" http://localhost/fcrepo/rest`), that will create a container `myContainer` at `http://localhost/fcrepo/rest/myContainer`
+2. Obtain a package to deposit, or use a [test package](package-ingest-test/src/main/resources/packages/test-package.zip)
+3. Use standard API-X service discovery to find the package ingest endpoint for the container, or just craft a URI that you know will work in the demo environment `http://localhost/services/myContainer/dcs:ingest`
+4. POST the package to the ingest endpoint for the container.   `curl -v -X POST -H "Content-Type: application/zip" --data-binary @my-package.zip http://localhost/services/myContainer/dcs:ingest`
+5. You'll see a response of type `text/event-stream`.  If successful, the last event will be:
+<pre>
+    event: success
+    data: Ingest successfully completed
+</pre>
+6. Look inside the container you just deposited into.  Browse the contents of `http://localhost/fcrepo/rest/myContainer`
