@@ -20,7 +20,7 @@ services:
         - fcrepo
 
   package-ingest:
-      image: dataconservancy/package-ingest:0.1.3-SNAPSHOT
+      image: dataconservancy/ext-package-ingest:1.0.0-SNAPSHOT
       container_name: package-ingest
       env_file: .env
       environment:

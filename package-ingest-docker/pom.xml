@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.dataconservancy.packaging</groupId>
     <artifactId>package-ingest</artifactId>
-    <version>0.1.3-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
   <packaging>pom</packaging>
   <artifactId>package-ingest-docker</artifactId>
@@ -94,7 +94,7 @@
                 <exec executable="docker">
                   <arg value="build" />
                   <arg
-                    value="--tag=dataconservancy/package-ingest:${project.version}" />
+                    value="--tag=dataconservancy/ext-package-ingest:${project.version}" />
                   <arg value="target/classes" />
                 </exec>
               </target>

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.dataconservancy.packaging</groupId>
     <artifactId>package-ingest</artifactId>
-    <version>0.1.3-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>package-ingest-http</artifactId>
   <packaging>bundle</packaging>
