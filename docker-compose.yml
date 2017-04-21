@@ -25,6 +25,7 @@ services:
       env_file: .env
       environment:
         - REPOSITORY_BASEURI=${APIX_BASEURI}
+        - LOG.org.apache.jena.riot=ERROR
       ports:
         - "${PACKAGE_INGEST_PORT}:${PACKAGE_INGEST_PORT}"
       depends_on:

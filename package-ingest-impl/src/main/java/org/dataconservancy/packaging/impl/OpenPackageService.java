@@ -65,7 +65,7 @@ public class OpenPackageService {
         while ((entry = ais.getNextEntry()) != null) {
 
             final File file = extract(dest_dir, entry, ais);
-            LOG.info("Extracted {} to {}", entry.getName(), file.getAbsolutePath());
+            LOG.debug("Extracted {} to {}", entry.getName(), file.getAbsolutePath());
 
             final String root = (entry.getName().split("/"))[0];
 
