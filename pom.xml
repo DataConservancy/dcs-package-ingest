@@ -194,9 +194,9 @@
   <!-- SCM ======================================================= -->
 
   <scm>
-    <connection>scm:git:https://github.com/DataConservancy/package-ingest.git</connection>
-    <developerConnection>scm:git:https://github.com/DataConservancy/package-ingest.git</developerConnection>
-    <url>https://github.com/DataConservancy/package-ingest</url>
+    <connection>scm:git:https://github.com/DataConservancy/dcs-package-ingest.git</connection>
+    <developerConnection>scm:git:https://github.com/DataConservancy/dcs-package-ingest.git</developerConnection>
+    <url>https://github.com/DataConservancy/dcs-package-ingest</url>
     <tag>HEAD</tag>
   </scm>
 
